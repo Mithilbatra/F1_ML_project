@@ -1,0 +1,21 @@
+Year,RoundNumber,EventName,Position,FullName,TeamName,GridPosition,Status,Points,Laps
+2024,8,Monaco Grand Prix,1.0,Charles Leclerc,Ferrari,1.0,Finished,25.0,78.0
+2024,8,Monaco Grand Prix,2.0,Oscar Piastri,McLaren,2.0,Finished,18.0,78.0
+2024,8,Monaco Grand Prix,3.0,Carlos Sainz,Ferrari,3.0,Finished,15.0,78.0
+2024,8,Monaco Grand Prix,4.0,Lando Norris,McLaren,4.0,Finished,12.0,78.0
+2024,8,Monaco Grand Prix,5.0,George Russell,Mercedes,5.0,Finished,10.0,78.0
+2024,8,Monaco Grand Prix,6.0,Max Verstappen,Red Bull Racing,6.0,Finished,8.0,78.0
+2024,8,Monaco Grand Prix,7.0,Lewis Hamilton,Mercedes,7.0,Finished,7.0,78.0
+2024,8,Monaco Grand Prix,8.0,Yuki Tsunoda,RB,8.0,Lapped,4.0,77.0
+2024,8,Monaco Grand Prix,9.0,Alexander Albon,Williams,9.0,Lapped,2.0,77.0
+2024,8,Monaco Grand Prix,10.0,Pierre Gasly,Alpine,10.0,Lapped,1.0,77.0
+2024,8,Monaco Grand Prix,11.0,Fernando Alonso,Aston Martin,14.0,Lapped,0.0,76.0
+2024,8,Monaco Grand Prix,12.0,Daniel Ricciardo,RB,12.0,Lapped,0.0,76.0
+2024,8,Monaco Grand Prix,13.0,Valtteri Bottas,Kick Sauber,17.0,Lapped,0.0,76.0
+2024,8,Monaco Grand Prix,14.0,Lance Stroll,Aston Martin,13.0,Lapped,0.0,76.0
+2024,8,Monaco Grand Prix,15.0,Logan Sargeant,Williams,15.0,Lapped,0.0,76.0
+2024,8,Monaco Grand Prix,16.0,Guanyu Zhou,Kick Sauber,18.0,Lapped,0.0,76.0
+2024,8,Monaco Grand Prix,17.0,Esteban Ocon,Alpine,11.0,Retired,0.0,0.0
+2024,8,Monaco Grand Prix,18.0,Sergio Perez,Red Bull Racing,16.0,Retired,0.0,0.0
+2024,8,Monaco Grand Prix,19.0,Nico Hulkenberg,Haas F1 Team,19.0,Retired,0.0,0.0
+2024,8,Monaco Grand Prix,20.0,Kevin Magnussen,Haas F1 Team,20.0,Retired,0.0,0.0
