@@ -1,0 +1,16 @@
+.git
+.venv
+.DS_Store
+fastf1_cache_dir
+notebooks
+models
+samples
+experiments
+data/raw
+data/processed/features.csv
+tests
+.claude
+.pytest_cache
+__pycache__
+*.pyc
+run_server.py

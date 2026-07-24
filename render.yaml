@@ -1,0 +1,16 @@
+# Render deployment (free tier, no credit card).
+# On render.com: New → Blueprint → connect this repo → it reads this file.
+# Render injects $PORT automatically; the app binds it via the PORT env var.
+services:
+  - type: web
+    name: pitwall
+    runtime: docker
+    plan: free            # 512 MB RAM, sleeps after 15 min idle, no card
+    healthCheckPath: /healthz
+    envVars:
+      - key: HOST
+        value: "0.0.0.0"
+      - key: PITWALL_DISABLE_CONSOLE   # no public terminal
+        value: "1"
+      - key: F1ML_CACHE_DIR            # writable FastF1 cache
+        value: "/tmp/f1cache"

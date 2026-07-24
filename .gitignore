@@ -209,3 +209,12 @@ marimo/_lsp/
 __marimo__/
 notebooks/fastf1_cache_dir/
 fastf1_cache_dir/
+
+# Trained model artifacts (regenerate with `f1ml train`)
+models/
+data/processed/features.csv
+
+.DS_Store
+.claude/
+.tunnel.log
+.git-rewrite/
