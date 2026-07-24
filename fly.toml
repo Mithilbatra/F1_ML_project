@@ -1,0 +1,40 @@
+# Fly.io deployment for Pit Wall.
+# Deploy with:  fly launch --copy-config --name <your-app-name>   (first time)
+#          then: fly deploy
+# The app name must be globally unique — change it below or pass --name.
+
+app = "pitwall"
+primary_region = "iad"   # change to your nearest: lhr, ams, fra, sin, syd, ...
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  HOST = "0.0.0.0"
+  PORT = "8080"
+  PITWALL_DISABLE_CONSOLE = "1"   # no public terminal on a hosted site
+  F1ML_CACHE_DIR = "/tmp/f1cache"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"     # scale to zero when idle to save cost
+  auto_start_machines = true
+  min_machines_running = 0
+  [http_service.http_options]
+    idle_timeout = 90             # FastF1 session loads can be slow
+
+[[vm]]
+  # ML libs + FastF1 need real memory; 256MB will OOM. 1GB is the sane floor.
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1
+
+[checks]
+  [checks.up]
+    type = "http"
+    port = 8080
+    path = "/healthz"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "60s"

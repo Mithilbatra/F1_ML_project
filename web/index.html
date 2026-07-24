@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pit Wall — F1 Podium Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:ital,wght@0,400;0,600;0,700;0,900;1,700;1,900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="brand">
+      <span class="brand-slash ghost2"></span>
+      <span class="brand-slash ghost1"></span>
+      <span class="brand-slash"></span>
+      <div class="brand-text">
+        <span class="brand-name">PIT WALL</span>
+        <span class="brand-sub">F1 PODIUM INTELLIGENCE</span>
+      </div>
+    </div>
+    <div class="season-switch" id="season-switch" role="tablist" aria-label="Season"></div>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-view="dashboard">Dashboard</button>
+    <button class="tab" data-view="weekend">Weekend</button>
+    <button class="tab" data-view="races">Races</button>
+    <button class="tab" data-view="standings">Standings</button>
+    <button class="tab" data-view="telemetry">Telemetry</button>
+    <button class="tab" data-view="strategy">Strategy</button>
+    <button class="tab" data-view="model">Model</button>
+    <button class="tab" data-view="predict">Predict</button>
+    <button class="tab" data-view="fantasy">Fantasy</button>
+    <button class="tab" data-view="raceline">Racing Line</button>
+    <button class="tab" data-view="console">Console</button>
+  </nav>
+  <div class="lap-progress" aria-hidden="true">
+    <div class="lap-progress-fill" id="lap-fill"></div>
+    <div class="lap-progress-car" id="lap-car" data-car></div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============================== DASHBOARD -->
+  <section class="view" id="view-dashboard">
+    <div class="section-head">
+      <h1 id="dash-title">Season</h1>
+      <p class="section-note" id="dash-note"></p>
+    </div>
+
+    <div class="hero-track" id="dash-hero" aria-hidden="true">
+      <div class="hero-caption">// FLAT OUT</div>
+      <div class="hero-speedlines far"></div>
+      <div class="hero-speedlines near"></div>
+      <div class="hero-car" data-car></div>
+      <div class="hero-kerb"></div>
+    </div>
+
+    <div class="stat-row" id="dash-stats"></div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Championship lead</div>
+        <div id="dash-leader"></div>
+      </div>
+      <div class="card">
+        <div class="card-title" id="dash-lastrace-title">Last race</div>
+        <div class="podium" id="dash-podium"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Season so far</div>
+      <div class="race-strip" id="dash-strip"></div>
+    </div>
+
+    <div class="card model-banner" id="dash-model"></div>
+  </section>
+
+  <!-- ============================== RACES -->
+  <section class="view hidden" id="view-races">
+    <div class="section-head">
+      <h1>Race results</h1>
+      <p class="section-note">Every round of the selected season. Select a race for the full classification.</p>
+    </div>
+    <div class="grid-races">
+      <div class="card race-list-card">
+        <table class="table" id="race-list"></table>
+      </div>
+      <div class="card race-detail-card" id="race-detail">
+        <div class="placeholder">Select a race</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== STANDINGS -->
+  <section class="view hidden" id="view-standings">
+    <div class="section-head">
+      <h1>Championship standings</h1>
+      <p class="section-note">Computed from race classifications — points, wins and podiums per driver and constructor.</p>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Drivers</div>
+        <table class="table" id="standings-drivers"></table>
+      </div>
+      <div class="card">
+        <div class="card-title">Constructors</div>
+        <table class="table" id="standings-teams"></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== MODEL -->
+  <section class="view hidden" id="view-model">
+    <div class="section-head">
+      <h1>Model performance</h1>
+      <p class="section-note">Honest numbers on held-out races. The bar to beat: simply picking the top-3 qualifiers.</p>
+    </div>
+    <div id="model-body"></div>
+  </section>
+
+  <!-- ============================== PREDICT -->
+  <section class="view hidden" id="view-predict">
+    <div class="section-head">
+      <h1>Race prediction</h1>
+      <p class="section-note">Retrains on every race before the one you pick — exactly what the model could have known that morning.</p>
+    </div>
+    <div class="card">
+      <div class="predict-controls">
+        <label>Season
+          <select id="predict-year"></select>
+        </label>
+        <label>Round
+          <select id="predict-round"></select>
+        </label>
+        <button class="btn-red" id="predict-run">Run prediction</button>
+        <span class="predict-status" id="predict-status"></span>
+      </div>
+    </div>
+    <div id="predict-result"></div>
+  </section>
+
+  <!-- ============================== TELEMETRY -->
+  <section class="view hidden" id="view-telemetry">
+    <div class="section-head">
+      <h1>Telemetry — head to head</h1>
+      <p class="section-note">Overlay two drivers' fastest laps: speed, throttle and brake traces, the time delta, and a track map coloured by who's quicker where.</p>
+    </div>
+    <div class="card tel-controls">
+      <label>Season <select id="tel-year"></select></label>
+      <label>Event <select id="tel-round"></select></label>
+      <label>Session <select id="tel-session"></select></label>
+      <label>Driver 1 <select id="tel-d1"></select></label>
+      <label>Driver 2 <select id="tel-d2"></select></label>
+      <button class="btn-red" id="tel-run">Compare</button>
+      <span class="predict-status" id="tel-status"></span>
+    </div>
+    <div id="tel-result"></div>
+  </section>
+
+  <!-- ============================== STRATEGY -->
+  <section class="view hidden" id="view-strategy">
+    <div class="section-head">
+      <h1>Strategy &amp; race pace</h1>
+      <p class="section-note">Tyre stints across the race and each driver's clean-lap race pace — the story behind the result that the timing screen hides.</p>
+    </div>
+    <div class="card tel-controls">
+      <label>Season <select id="strat-year"></select></label>
+      <label>Race <select id="strat-round"></select></label>
+      <button class="btn-red" id="strat-run">Load race</button>
+      <span class="predict-status" id="strat-status"></span>
+    </div>
+    <div id="strat-result"></div>
+  </section>
+
+  <!-- ============================== WEEKEND -->
+  <section class="view hidden" id="view-weekend">
+    <div class="section-head">
+      <h1>Race weekend</h1>
+      <p class="section-note">What's next: the upcoming Grand Prix, a countdown, and the model's forecast for the podium.</p>
+    </div>
+    <div id="weekend-result"><div class="card"><div class="placeholder">Loading schedule…</div></div></div>
+  </section>
+
+  <!-- ============================== FANTASY -->
+  <section class="view hidden" id="view-fantasy">
+    <div class="section-head">
+      <h1>Fantasy optimiser</h1>
+      <p class="section-note">Predicted points per driver and constructor, and the best-value F1 Fantasy team the budget can buy.</p>
+    </div>
+    <div class="card tel-controls">
+      <label>Budget ($M) <input type="number" id="fan-budget" min="80" max="120" step="0.5" value="100"></label>
+      <button class="btn-red" id="fan-run">Optimise team</button>
+      <span class="predict-status" id="fan-status"></span>
+    </div>
+    <div id="fan-result"></div>
+  </section>
+
+  <!-- ============================== RACING LINE -->
+  <section class="view hidden" id="view-raceline">
+    <div class="section-head">
+      <h1>Racing line</h1>
+      <p class="section-note">Upload a schematic track map (the tarmac drawn as a closed loop). The analyzer finds the minimum-curvature line, the corners, and an idealised lap time.</p>
+    </div>
+
+    <div class="rl-grid">
+      <div class="rl-left">
+        <div class="card" id="rl-dropzone">
+          <div class="dz-inner" id="rl-dz-inner">
+            <div class="dz-icon"></div>
+            <div class="dz-title">Drop a track map here</div>
+            <div class="dz-sub">or <span class="dz-browse">browse</span> — PNG / JPG, tarmac as a closed band</div>
+            <input type="file" id="rl-file" accept="image/png,image/jpeg" hidden>
+          </div>
+        </div>
+        <div class="card rl-controls hidden" id="rl-controls">
+          <label class="rl-length">Real track length (km)
+            <input type="number" id="rl-length" min="0.5" max="15" step="0.1" value="5.3">
+          </label>
+          <button class="btn-red" id="rl-run">Analyze</button>
+          <button class="btn-ghost" id="rl-reset">New map</button>
+          <span class="predict-status" id="rl-status"></span>
+        </div>
+        <div class="card rl-corners hidden" id="rl-corner-card">
+          <div class="card-title">Corners</div>
+          <div class="rl-corner-list" id="rl-corner-list"></div>
+        </div>
+      </div>
+
+      <div class="rl-right">
+        <div class="card rl-stage-card">
+          <div class="rl-stage-head">
+            <div class="rl-legend" id="rl-legend"></div>
+            <div class="rl-toggles hidden" id="rl-toggles">
+              <label><input type="checkbox" id="rl-t-bounds" checked> Boundaries</label>
+              <label><input type="checkbox" id="rl-t-center"> Centreline</label>
+              <label><input type="checkbox" id="rl-t-speed" checked> Speed colour</label>
+            </div>
+          </div>
+          <div class="rl-canvas-wrap" id="rl-canvas-wrap">
+            <canvas id="rl-canvas"></canvas>
+            <div class="rl-empty" id="rl-empty">The analysed track will appear here</div>
+          </div>
+        </div>
+
+        <div class="stat-row rl-stats hidden" id="rl-stats"></div>
+
+        <div class="card rl-corner-focus hidden" id="rl-focus">
+          <div class="rl-focus-head">
+            <div class="card-title" style="margin:0">Corner <span id="rl-focus-num"></span> — three lines through it</div>
+            <div class="rl-focus-nav">
+              <button class="btn-ghost" id="rl-prev">‹ Prev</button>
+              <button class="btn-ghost" id="rl-next">Next ›</button>
+            </div>
+          </div>
+          <div class="rl-variant-tabs" id="rl-variant-tabs"></div>
+          <div class="rl-variant-caption" id="rl-variant-caption"></div>
+          <div class="rl-cycle-row">
+            <button class="btn-red" id="rl-cycle">▶ Play the three lines</button>
+            <span class="rl-cycle-hint">early braking → optimal → late braking</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== CONSOLE -->
+  <section class="view hidden" id="view-console">
+    <div class="section-head">
+      <h1>Console</h1>
+      <p class="section-note">The full <code>f1ml</code> pipeline, in the browser. Same commands as the terminal.</p>
+    </div>
+    <div class="chip-row" id="console-chips"></div>
+    <div class="card console-card">
+      <div class="console-out" id="console-out"></div>
+      <div class="console-line">
+        <span class="console-prompt">pit-wall:~$</span>
+        <input id="console-in" type="text" spellcheck="false" autocomplete="off"
+               placeholder="try: f1ml info   (or type `help`)">
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="radio-stack" id="radio-stack" aria-live="polite"></div>
+
+<footer class="foot">
+  <span>Data · FastF1</span><span class="foot-dot"></span>
+  <span>Models · scikit-learn</span><span class="foot-dot"></span>
+  <span>Runs locally — nothing leaves your machine</span>
+</footer>
+
+<script src="charts.js"></script>
+<script src="app.js"></script>
+<script src="racingline.js"></script>
+<script src="telemetry.js"></script>
+<script src="companion.js"></script>
+</body>
+</html>

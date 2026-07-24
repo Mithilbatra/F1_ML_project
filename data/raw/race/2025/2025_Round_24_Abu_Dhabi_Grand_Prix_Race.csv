@@ -1,1 +1,21 @@
-Year,RoundNumber,EventName,Position,FullName,TeamName,GridPosition,Status,Points,Laps
+Year,RoundNumber,EventName,Position,FullName,TeamName,Status,Points,Laps,GridPosition
+2025,24,Abu Dhabi Grand Prix,1.0,Max Verstappen,Red Bull Racing,Finished,25.0,58.0,1.0
+2025,24,Abu Dhabi Grand Prix,2.0,Oscar Piastri,McLaren,Finished,18.0,58.0,3.0
+2025,24,Abu Dhabi Grand Prix,3.0,Lando Norris,McLaren,Finished,15.0,58.0,2.0
+2025,24,Abu Dhabi Grand Prix,4.0,Charles Leclerc,Ferrari,Finished,12.0,58.0,5.0
+2025,24,Abu Dhabi Grand Prix,5.0,George Russell,Mercedes,Finished,10.0,58.0,4.0
+2025,24,Abu Dhabi Grand Prix,6.0,Fernando Alonso,Aston Martin,Finished,8.0,58.0,6.0
+2025,24,Abu Dhabi Grand Prix,7.0,Esteban Ocon,Haas F1 Team,Finished,6.0,58.0,8.0
+2025,24,Abu Dhabi Grand Prix,8.0,Lewis Hamilton,Ferrari,Finished,4.0,58.0,16.0
+2025,24,Abu Dhabi Grand Prix,9.0,Nico Hulkenberg,Kick Sauber,Finished,2.0,58.0,18.0
+2025,24,Abu Dhabi Grand Prix,10.0,Lance Stroll,Aston Martin,Finished,1.0,58.0,15.0
+2025,24,Abu Dhabi Grand Prix,11.0,Gabriel Bortoleto,Kick Sauber,Finished,0.0,58.0,7.0
+2025,24,Abu Dhabi Grand Prix,12.0,Oliver Bearman,Haas F1 Team,Finished,0.0,58.0,11.0
+2025,24,Abu Dhabi Grand Prix,13.0,Carlos Sainz,Williams,Finished,0.0,58.0,12.0
+2025,24,Abu Dhabi Grand Prix,14.0,Yuki Tsunoda,Red Bull Racing,Finished,0.0,58.0,10.0
+2025,24,Abu Dhabi Grand Prix,15.0,Kimi Antonelli,Mercedes,Finished,0.0,58.0,14.0
+2025,24,Abu Dhabi Grand Prix,16.0,Alexander Albon,Williams,Finished,0.0,58.0,17.0
+2025,24,Abu Dhabi Grand Prix,17.0,Isack Hadjar,Racing Bulls,Lapped,0.0,57.0,9.0
+2025,24,Abu Dhabi Grand Prix,18.0,Liam Lawson,Racing Bulls,Lapped,0.0,57.0,13.0
+2025,24,Abu Dhabi Grand Prix,19.0,Pierre Gasly,Alpine,Lapped,0.0,57.0,19.0
+2025,24,Abu Dhabi Grand Prix,20.0,Franco Colapinto,Alpine,Lapped,0.0,57.0,20.0
