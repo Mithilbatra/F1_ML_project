@@ -145,81 +145,86 @@ const Charts = (() => {
     return `<svg ${NS} viewBox="0 0 ${w} ${h}" class="ct-svg">${g}</svg>`;
   }
 
-  /* Side-profile modern F1 car, hand-drawn. Reused by the dashboard hero and
-     the scroll-progress marker; wheel rims carry a .rim class so CSS can spin
-     them. Pure vector — crisp at any size, no external assets. */
+  /* Side-profile modern F1 car — a clean, single-silhouette illustration.
+     Nose to the left. Wheel rims carry a .rim class so CSS can spin them.
+     Pure vector, crisp at any size, no external assets. */
   function car(cls = "") {
-    return `<svg ${NS} viewBox="0 0 540 150" class="car-svg ${cls}" aria-hidden="true">
-      <ellipse cx="268" cy="128" rx="240" ry="9" fill="rgba(0,0,0,0.5)"/>
+    const RED = "#e10600", TRIM = "#f2f0ed", TYRE = "#131318", RIM = "#c7cad0",
+          EDGE = "#43434f";
+    // one continuous body silhouette (front-wing tip -> airbox -> rear deck)
+    const body = "M30 138 C34 130 44 126 62 125 C110 122 165 120 210 116 "
+      + "C246 113 278 112 300 112 L330 112 C336 100 350 94 358 96 "
+      + "C372 97 380 102 388 106 C440 116 492 122 528 126 L540 126 L540 140 "
+      + "L120 140 C74 140 46 139 30 138 Z";
+    return `<svg ${NS} viewBox="0 0 600 176" class="car-svg ${cls}" aria-hidden="true">
+      <defs>
+        <linearGradient id="carBody" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#33333f"/>
+          <stop offset="0.5" stop-color="#22222c"/>
+          <stop offset="1" stop-color="#181820"/>
+        </linearGradient>
+      </defs>
 
-      <!-- rear wing -->
-      <path d="M436 52 L514 52 L514 61 L436 61 Z" fill="#0f0f17"/>
-      <path d="M438 55 L512 55 L512 58 L438 58 Z" fill="#e10600"/>
-      <rect x="506" y="45" width="9" height="60" rx="3" fill="#15151e"/>
-      <path d="M468 61 L474 90 L480 90 L476 61 Z" fill="#15151e"/>
-      <path d="M472 96 L512 96 L512 102 L472 102 Z" fill="#0f0f17"/>
+      <ellipse cx="300" cy="160" rx="268" ry="7" fill="rgba(0,0,0,0.4)"/>
 
-      <!-- floor -->
-      <path d="M60 106 L455 106 L460 114 L66 114 Z" fill="#0b0b11"/>
+      <!-- rear wing (connected to the rear deck) -->
+      <rect x="558" y="52" width="12" height="76" rx="4" fill="#20202a"/>
+      <rect x="498" y="52" width="70" height="11" rx="4" fill="#2a2a34"/>
+      <rect x="504" y="55" width="58" height="4" rx="2" fill="${RED}"/>
+      <rect x="512" y="112" width="54" height="8" rx="3" fill="#20202a"/>
+      <path d="M534 63 q7 24 0 49 h8 q7 -24 1 -49 z" fill="#20202a"/>
 
-      <!-- nose + monocoque -->
-      <path d="M24 100 C80 94 130 88 180 85 L268 82 L268 106 L34 106 Z" fill="#e10600"/>
-      <path d="M24 100 C80 96 130 91 180 88 L188 106 L34 106 Z" fill="#a50500"/>
+      <!-- body -->
+      <path d="${body}" fill="url(#carBody)"/>
+      <path d="${body}" fill="none" stroke="${EDGE}" stroke-width="1.6" stroke-linejoin="round"/>
 
-      <!-- sidepod + engine cover -->
-      <path d="M268 82 L352 84 C408 88 436 94 448 100 L448 106 L268 106 Z" fill="#e10600"/>
-      <path d="M300 84 L352 86 C400 89 430 95 446 100 L448 106 L300 106 Z" fill="#8f0400"/>
+      <!-- airbox intake shadow -->
+      <path d="M344 104 C350 86 370 82 380 92 L372 104 Z" fill="#0d0d14"/>
 
-      <!-- cockpit + halo -->
-      <path d="M300 82 C304 70 328 70 332 82 Z" fill="#15151e"/>
-      <path d="M282 80 C294 60 336 58 350 76" fill="none" stroke="#2e2e3a" stroke-width="5" stroke-linecap="round"/>
-      <path d="M316 60 L316 82" stroke="#2e2e3a" stroke-width="4"/>
+      <!-- red livery sweep along the shoulder, tapering rearward -->
+      <path d="M60 128 C150 121 240 116 300 116 C318 116 326 120 330 126
+               C300 120 220 122 150 128 C112 131 82 134 60 136 Z" fill="${RED}"/>
+      <!-- thin white pinstripe under the red -->
+      <path d="M66 137 C150 129 240 123 316 123 L316 126 C240 126 150 132 66 139 Z"
+            fill="${TRIM}" opacity="0.9"/>
 
-      <!-- airbox + engine hump -->
-      <path d="M332 78 C340 62 362 62 372 72 C404 78 428 88 440 96 L440 104 L332 104 Z" fill="#e10600"/>
-      <path d="M340 74 C348 64 360 64 368 72 L372 78 L340 78 Z" fill="#15151e"/>
+      <!-- number roundel on the nose -->
+      <circle cx="104" cy="131" r="9.5" fill="${TRIM}"/>
+      <text x="104" y="135.5" text-anchor="middle" font-family="Titillium Web, sans-serif"
+            font-size="12" font-style="italic" font-weight="900" fill="${RED}">5</text>
 
-      <!-- livery accents -->
-      <path d="M180 88 L268 85 L268 89 L180 92 Z" fill="#f2f0ed"/>
-      <path d="M352 86 C400 90 428 95 444 100 L440 104 C424 98 396 93 350 90 Z" fill="#f2f0ed"/>
-      <text x="252" y="102" font-family="Titillium Web, sans-serif" font-size="22"
-            font-style="italic" font-weight="900" fill="#f2f0ed">5</text>
+      <!-- cockpit opening + halo -->
+      <path d="M312 112 C316 101 340 101 344 112 Z" fill="#0a0a10"/>
+      <path d="M298 111 C308 90 352 90 362 109" fill="none" stroke="#3a3a46"
+            stroke-width="6" stroke-linecap="round"/>
+      <line x1="330" y1="92" x2="330" y2="110" stroke="#3a3a46" stroke-width="5"/>
 
       <!-- front wing -->
-      <path d="M8 108 L128 108 L128 113 L8 113 Z" fill="#0f0f17"/>
-      <path d="M14 101 L118 104 L118 107 L14 104 Z" fill="#15151e"/>
-      <rect x="6" y="94" width="7" height="21" rx="2" fill="#15151e"/>
+      <rect x="8" y="145" width="122" height="6" rx="3" fill="#2a2a34"/>
+      <rect x="18" y="138" width="104" height="4" rx="2" fill="#20202a"/>
+      <rect x="6" y="130" width="8" height="25" rx="2" fill="#20202a"/>
 
-      <!-- wheels -->
-      <g>
-        <circle cx="152" cy="97" r="28" fill="#141419"/>
-        <circle cx="152" cy="97" r="28" fill="none" stroke="#000" stroke-width="3"/>
-        <g class="rim">
-          <circle cx="152" cy="97" r="13" fill="#23232c"/>
-          <g stroke="#9ea2ab" stroke-width="3" stroke-linecap="round">
-            <line x1="152" y1="86" x2="152" y2="108"/>
-            <line x1="141" y1="97" x2="163" y2="97"/>
-            <line x1="144" y1="89" x2="160" y2="105"/>
-            <line x1="160" y1="89" x2="144" y2="105"/>
-          </g>
-          <circle cx="152" cy="97" r="4.5" fill="#e10600"/>
-        </g>
-      </g>
-      <g>
-        <circle cx="408" cy="96" r="29" fill="#141419"/>
-        <circle cx="408" cy="96" r="29" fill="none" stroke="#000" stroke-width="3"/>
-        <g class="rim">
-          <circle cx="408" cy="96" r="13.5" fill="#23232c"/>
-          <g stroke="#9ea2ab" stroke-width="3" stroke-linecap="round">
-            <line x1="408" y1="85" x2="408" y2="107"/>
-            <line x1="397" y1="96" x2="419" y2="96"/>
-            <line x1="400" y1="88" x2="416" y2="104"/>
-            <line x1="416" y1="88" x2="400" y2="104"/>
-          </g>
-          <circle cx="408" cy="96" r="4.5" fill="#e10600"/>
-        </g>
-      </g>
+      ${wheel(170, 130, 33, TYRE, RIM, RED)}
+      ${wheel(456, 128, 37, TYRE, RIM, RED)}
     </svg>`;
+  }
+
+  /* Clean 5-spoke wheel; the spoked disc is a .rim group for CSS spin. */
+  function wheel(cx, cy, r, tyre, rim, hub) {
+    const spokes = [];
+    for (let k = 0; k < 5; k++) {
+      const a = (k / 5) * Math.PI * 2;
+      spokes.push(`<line x1="${cx}" y1="${cy}" x2="${(cx + Math.cos(a) * r * 0.42).toFixed(1)}" y2="${(cy + Math.sin(a) * r * 0.42).toFixed(1)}" stroke="${rim}" stroke-width="${r * 0.11}" stroke-linecap="round"/>`);
+    }
+    return `<g>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="${tyre}"/>
+      <circle cx="${cx}" cy="${cy}" r="${r - 2}" fill="none" stroke="#2a2a33" stroke-width="2"/>
+      <g class="rim" style="transform-box:fill-box;transform-origin:center">
+        <circle cx="${cx}" cy="${cy}" r="${r * 0.5}" fill="#22222b"/>
+        ${spokes.join("")}
+        <circle cx="${cx}" cy="${cy}" r="${r * 0.16}" fill="${hub}"/>
+      </g>
+    </g>`;
   }
 
   return { lines, delta, track, trackScale, bars, lights, countUp, car };
