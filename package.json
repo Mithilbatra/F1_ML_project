@@ -1,0 +1,13 @@
+{
+  "name": "pitwall-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright frontend smoke tests for the Pit Wall dashboard",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
+}

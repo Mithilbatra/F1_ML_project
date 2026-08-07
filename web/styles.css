@@ -188,6 +188,20 @@ body {
 .section-note { color: var(--muted); font-size: 13.5px; margin-top: 6px; padding-left: 19px; }
 .section-note code { font-family: var(--mono); font-size: 12px; color: var(--text); }
 
+.static-note {
+  margin: 14px 0 4px; padding: 12px 15px;
+  border: 1px solid rgba(255,90,82,.28);
+  border-left: 3px solid var(--red-text);
+  border-radius: 8px;
+  background: rgba(255,90,82,.06);
+  color: var(--muted); font-size: 13px; line-height: 1.55;
+}
+.static-note strong { color: var(--red-text); }
+.static-note code {
+  font-family: var(--mono); font-size: 12px; color: var(--text);
+  background: rgba(255,255,255,.06); padding: 1px 5px; border-radius: 4px;
+}
+
 .card {
   background: var(--surface);
   border: 1px solid var(--line-soft);

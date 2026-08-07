@@ -36,9 +36,13 @@
 
   /* ------------------------------------------------------------ telemetry */
 
+  // On the static build these endpoints have no backend; the shim shows a
+  // notice explaining that, so just skip the (doomed) network init.
+  const backendOnly = () => document.body.dataset.static === "1";
+
   let telInit = false;
   async function initTelemetry() {
-    if (telInit) return; telInit = true;
+    if (telInit || backendOnly()) return; telInit = true;
     await seasons();
     fillYears($("#tel-year"));
     $("#tel-session").innerHTML = SESSIONS.map(([v, l]) => `<option value="${v}">${l}</option>`).join("");
@@ -250,7 +254,7 @@
 
   let stratInit = false;
   async function initStrategy() {
-    if (stratInit) return; stratInit = true;
+    if (stratInit || backendOnly()) return; stratInit = true;
     await seasons();
     fillYears($("#strat-year"));
     $("#strat-year").value = years[years.length - 1];

@@ -283,6 +283,60 @@ def cmd_setup(args) -> None:
         print("  Everything already in place. Ready.")
 
 
+def cmd_refresh(args) -> None:
+    """Bring the whole pipeline current: pull the latest results, rebuild
+    features, retrain, refresh backtests. Idempotent and safe to run on a
+    schedule — if there's no new data (or no network) it just rebuilds."""
+    from datetime import datetime, timezone
+
+    from . import data as datamod
+    from .backtest import backtest_year
+    from .features import build_and_save, feature_columns
+    from .modeling import train_all
+
+    year = args.year or datetime.now(timezone.utc).year
+    _print_header(f"Refresh — season {year}")
+
+    if not args.no_fetch:
+        try:
+            print(f"  Pulling {year} from FastF1…")
+            written = datamod.fetch_year(year)
+            print(f"  {len(written)} session files fetched.")
+            datamod.merge_year(year)
+        except Exception as exc:
+            print(f"  Fetch skipped ({exc}); rebuilding from the data on disk.")
+
+    df = build_and_save()
+    print(f"  Features rebuilt: {len(df)} rows, {len(feature_columns(df))} columns.")
+    report = train_all(df)
+    best = report["models"][report["best_model"]]["metrics"]
+    print(f"  Retrained — best model {report['best_model']}, "
+          f"top-3 hit rate {best['top3_hit_rate']:.1%}.")
+    for y in datamod.available_years():
+        backtest_year(y)
+    print("  Backtests refreshed. Everything is up to date.")
+
+
+def cmd_snapshot(args) -> None:
+    """Pre-render the app to a self-contained static site (for GitHub Pages)."""
+    from pathlib import Path
+
+    from . import bootstrap, snapshot
+    bootstrap.ensure_ready()
+    out = Path(args.out)
+    _print_header(f"Snapshot → {out}")
+    result = snapshot.build(out)
+    print(f"  {result['written']} API files written for seasons "
+          f"{', '.join(str(y) for y in result['years'])}.")
+    if result["skipped"]:
+        print(f"  {len(result['skipped'])} endpoints skipped "
+              f"(backend-only or no telemetry): "
+              f"{', '.join(result['skipped'][:4])}"
+              f"{' …' if len(result['skipped']) > 4 else ''}")
+    print(f"  Static site ready. Serve it with any static host, or preview:")
+    print(f"    python -m http.server -d {out} 8000")
+
+
 def cmd_serve(args) -> None:
     from . import bootstrap
     from .server import create_app
@@ -388,6 +442,15 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--d1", required=True, help="driver 1 abbreviation, e.g. VER")
     p.add_argument("--d2", required=True, help="driver 2 abbreviation, e.g. LEC")
     p.set_defaults(func=cmd_h2h)
+
+    p = sub.add_parser("refresh", help="pull latest data, rebuild + retrain (keeps it current)")
+    p.add_argument("--year", type=int, default=None, help="season to refresh (default: this year)")
+    p.add_argument("--no-fetch", action="store_true", help="rebuild + retrain without downloading")
+    p.set_defaults(func=cmd_refresh)
+
+    p = sub.add_parser("snapshot", help="pre-render a static site (for GitHub Pages)")
+    p.add_argument("--out", default="site", help="output directory (default: site/)")
+    p.set_defaults(func=cmd_snapshot)
 
     p = sub.add_parser("serve", help="run the web dashboard")
     import os

@@ -23,6 +23,10 @@ def test_all_subcommands_parse():
         ["h2h", "--year", "2024", "--round", "8", "--d1", "VER", "--d2", "LEC"],
         ["raceline", "--image", "track.png", "--length-km", "5.3"],
         ["serve", "--port", "5000"],
+        ["refresh"],
+        ["refresh", "--year", "2025", "--no-fetch"],
+        ["snapshot"],
+        ["snapshot", "--out", "build"],
     ):
         args = parser.parse_args(argv)
         assert callable(args.func)

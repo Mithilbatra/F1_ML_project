@@ -1,0 +1,71 @@
+name: Deploy static dashboard to Pages
+
+# Optional free static mirror of the dashboard on GitHub Pages (no card).
+# Disabled by default so it doesn't post failed runs before Pages is turned on.
+# To use it: repo Settings → Pages → Source: "GitHub Actions", then either run
+# this workflow from the Actions tab, or uncomment the schedule/push triggers
+# below to keep it auto-updating (it pulls latest results, retrains, republishes).
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: "0 6 * * 1"          # every Monday 06:00 UTC, after the race
+  # push:
+  #   branches: [main]
+  #   paths: ["web/**", "src/**", ".github/workflows/pages.yml"]
+
+# Least privilege the Pages deploy needs.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never run two deploys at once; let a newer one supersede a queued one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --extra vision
+
+      # Cache FastF1 downloads so scheduled runs don't re-fetch everything.
+      - name: Cache FastF1 data
+        uses: actions/cache@v4
+        with:
+          path: fastf1_cache_dir
+          key: fastf1-${{ github.run_id }}
+          restore-keys: fastf1-
+
+      # Pull the latest race data + retrain. If the fetch fails (FastF1 outage,
+      # rate limit), refresh falls back to the committed data — the deploy still
+      # succeeds, just without brand-new races.
+      - name: Refresh data + models
+        run: uv run f1ml refresh || uv run f1ml refresh --no-fetch
+
+      - name: Build static site
+        run: uv run f1ml snapshot --out site
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

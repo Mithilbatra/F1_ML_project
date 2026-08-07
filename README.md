@@ -60,7 +60,17 @@ To use the `f1ml` command directly, either prefix with `uv run`
 
 ## Refreshing data
 
-The repo ships with 2024–2025 results. To pull fresh data (needs internet):
+The repo ships with 2024–2025 results. The one-shot way to bring everything
+current — pull the latest races, rebuild features, retrain, refresh the
+backtests — is:
+
+```bash
+uv run f1ml refresh                # this season; add --year 2025 to pin one
+```
+
+`refresh` is idempotent and safe to run on a schedule: if there's no new data
+(or no internet) it just rebuilds and retrains from what's on disk. To do the
+steps by hand instead:
 
 ```bash
 uv run f1ml fetch --year 2025      # download race + qualifying via FastF1
@@ -86,6 +96,8 @@ uv run f1ml train --model all      # retrain, save models/ + metrics.json
 | `f1ml fantasy [--budget 100]` | optimise an F1 Fantasy team within budget |
 | `f1ml h2h --year 2024 --round 8 --d1 VER --d2 LEC [--session Q]` | telemetry head-to-head between two drivers |
 | `f1ml raceline --image track.png [--length-km 5.3] [--out out.png]` | racing line + lap time from a track map (needs the `vision` extra) |
+| `f1ml refresh [--year 2025] [--no-fetch]` | pull latest data, rebuild features, retrain, refresh backtests |
+| `f1ml snapshot [--out site]` | pre-render a self-contained static site (for GitHub Pages) |
 | `f1ml serve [--port 5173]` | launch the web dashboard |
 
 Every command except `serve` is also runnable from the **Console** tab in the
@@ -158,6 +170,32 @@ arbitrary ground-level photos are out of scope. Very tight hairpins can merge
 their in/out lanes on a low-resolution map — render the map larger or with a
 thinner track so the corner stays open (see `samples/build_real_tracks.py`).
 
+## Deploy it free (GitHub Pages, no card)
+
+The dashboard can run as a **fully static site** with no server. `f1ml snapshot`
+pre-renders every API response the core needs (standings, model, predictions,
+the race-weekend hub, driver profiles) into JSON, and a small `static-shim.js`
+makes the *same* frontend read those files when there's no backend:
+
+```bash
+uv run f1ml snapshot --out site
+python -m http.server -d site 8000     # preview at http://localhost:8000
+```
+
+`.github/workflows/pages.yml` does this on a schedule (every Monday, after the
+race) and on every push: it runs `f1ml refresh` to pull the latest results,
+`f1ml snapshot`, and publishes `site/` to GitHub Pages — a permanent, free,
+no-card public URL that stays current on its own.
+
+**One-time setup:** in the repo, **Settings → Pages → Build and deployment →
+Source: GitHub Actions**. Push to `main` (or run the workflow manually) and the
+site goes live at `https://<you>.github.io/<repo>/`.
+
+The live-FastF1 features (telemetry duels, strategy, racing-line upload) need
+the Python backend, so on the static build those tabs show a short notice and
+point to `f1ml serve`. Everything else is live from the snapshot. To keep those
+features public too, deploy the container instead — see [DEPLOY.md](DEPLOY.md).
+
 ## Project layout
 
 ```
@@ -175,9 +213,12 @@ src/f1_ml/            the package
   racingline.py       track-map → racing line + lap time (needs 'vision' extra)
   cli.py              the `f1ml` command
   server.py           Flask API + console runner
+  snapshot.py         pre-render the app to a static site (for GitHub Pages)
 web/                  dashboard frontend (no build step)
   index.html styles.css app.js charts.js telemetry.js companion.js racingline.js
+  static-shim.js      lets the same frontend run backendless off the snapshot
 tests/                pytest suite
+e2e/                  Playwright frontend smoke tests
 data/                 raw/ and processed/ CSVs
 models/               trained artifacts + metrics.json (git-ignored)
 src/etl, src/features, src/train, src/models
@@ -188,11 +229,16 @@ notebooks/            original exploration notebooks
 ## Tests
 
 ```bash
-pytest
+pytest                                    # Python: 42 tests
+npm ci && npx playwright test             # frontend smoke tests (boots f1ml serve)
 ```
 
-Covers the leakage guards, no-fake-row dropping, driver/team normalisation, the
-top-3-per-race metric, time-ordered splits, and CLI parsing.
+Python covers the leakage guards, no-fake-row dropping, driver/team
+normalisation, the top-3-per-race metric, time-ordered splits, and CLI parsing.
+The Playwright suite (`e2e/`) drives the real dashboard: every tab loads without
+console errors, the core data views render, the driver modal is keyboard
+accessible (open, Esc, focus return), and the telemetry scrubber responds to the
+keyboard. Both run in CI (`.github/workflows/ci.yml`).
 
 ## Notes
 

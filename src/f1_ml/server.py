@@ -75,6 +75,13 @@ def create_app() -> Flask:
     def healthz():
         return {"status": "ok"}
 
+    # The frontend probes this to tell the live app apart from the pre-rendered
+    # static build (where it's a real file saying {"static": true}). Answering
+    # here keeps the console clean instead of 404-ing on the live backend.
+    @app.get("/data/static.json")
+    def static_flag():
+        return {"static": False}
+
     # ------------------------------------------------------------- data api
 
     @app.get("/api/seasons")

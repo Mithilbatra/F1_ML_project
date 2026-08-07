@@ -217,3 +217,9 @@ data/processed/features.csv
 .DS_Store
 .tunnel.log
 .git-rewrite/
+
+# Node / Playwright
+node_modules/
+playwright-report/
+test-results/
+/playwright/.cache/
