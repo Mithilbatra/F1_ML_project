@@ -157,6 +157,7 @@
     if (!ov) {
       ov = document.createElement("canvas");
       ov.id = "rl-overlay";
+      ov.setAttribute("aria-hidden", "true");   // decorative animation layer
       document.getElementById("rl-canvas-wrap").appendChild(ov);
     }
     ov.width = base.width; ov.height = base.height;
@@ -237,13 +238,19 @@
   function renderCornerList() {
     const speed = RL.result.speed_kmh;
     $("#rl-corner-list").innerHTML = RL.result.corners.map((c) => `
-      <div class="rl-corner-item" data-corner="${c.number}">
+      <div class="rl-corner-item" data-corner="${c.number}" tabindex="0" role="button"
+           aria-label="Corner ${c.number}, ${c.radius_m.toFixed(0)} metre radius, ${speed[c.index].toFixed(0)} km per hour">
         <span class="rc-num">${c.number}</span>
         <span class="rc-meta">${c.radius_m.toFixed(0)} m radius</span>
         <span class="rc-spd">${speed[c.index].toFixed(0)} km/h</span>
       </div>`).join("");
-    $("#rl-corner-list").querySelectorAll(".rl-corner-item").forEach((el) =>
-      el.addEventListener("click", () => focusCorner(Number(el.dataset.corner))));
+    $("#rl-corner-list").querySelectorAll(".rl-corner-item").forEach((el) => {
+      const go = () => focusCorner(Number(el.dataset.corner));
+      el.addEventListener("click", go);
+      el.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
+      });
+    });
     $("#rl-corner-card").classList.remove("hidden");
   }
 

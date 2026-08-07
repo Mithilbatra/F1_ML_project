@@ -119,15 +119,17 @@
         <span><span class="sw" style="background:${d2.color}"></span>${esc(d2.abbr)} faster</span>
       </div>
       ${Charts.track({ x: h.track.x, y: h.track.y, faster: h.track.faster,
-                       colors: [d1.color, d2.color], markerId: "tel-track-marker" })}
+                       colors: [d1.color, d2.color], markerId: "tel-track-marker",
+                       label: `Track dominance map: ${d1.abbr} is faster over ${Math.round(h.track.faster.filter((f) => f === 1).length / h.track.faster.length * 100)}% of the lap, ${d2.abbr} over the rest.` })}
     </div>`;
 
     const wrap = (svg) => `<div class="chart-hover">${svg}<div class="xh-line"></div></div>`;
     const speedCard = `<div class="card"><div class="card-title">Speed (km/h) over the lap</div>
-      <div class="tel-readout" id="tel-readout"><span class="ro-hint">Hover the charts to scrub the lap — the dot on the track map follows.</span></div>
+      <div class="tel-readout" id="tel-readout"><span class="ro-hint">Hover — or focus the chart and use arrow keys — to scrub the lap.</span></div>
       ${wrap(Charts.lines({ x: h.distance, w: 680, h: 200, ylabel: "km/h", series: [
         { y: h.traces.d1.speed, color: d1.color, width: 2 },
-        { y: h.traces.d2.speed, color: d2.color, width: 2 }] }))}
+        { y: h.traces.d2.speed, color: d2.color, width: 2 }],
+        label: `Speed over the lap: ${d1.abbr} top speed ${(d1.top_speed || 0).toFixed(0)}, ${d2.abbr} top speed ${(d2.top_speed || 0).toFixed(0)} km/h.` }))}
       <div class="card-title" style="margin:14px 0 6px">Time delta — below the line, ${esc(d2.abbr)} is ahead</div>
       ${wrap(Charts.delta({ x: h.distance, y: h.delta, w: 680, h: 130, posColor: d1.color, negColor: d2.color }))}
       <div class="card-title" style="margin:14px 0 6px">Throttle &amp; brake</div>
@@ -209,6 +211,39 @@
         readout.innerHTML = hint;
       });
     }
+
+    // keyboard: the speed chart is a slider that sweeps the whole lap, so the
+    // whole telemetry duel is usable — and announced — without a mouse.
+    const slider = wraps[0];
+    slider.tabIndex = 0;
+    slider.setAttribute("role", "slider");
+    slider.setAttribute("aria-label",
+      `Lap scrubber, ${h.d1.abbr} versus ${h.d2.abbr}. Arrow keys move through the lap.`);
+    slider.setAttribute("aria-valuemin", "0");
+    slider.setAttribute("aria-valuemax", "100");
+    slider.setAttribute("aria-valuenow", "0");
+    let pos = 0;  // 0..1 position along the lap
+    const place = (t) => {
+      pos = Math.max(0, Math.min(1, t));
+      update(PAD_L + pos * (1 - PAD_L - PAD_R));
+      slider.setAttribute("aria-valuenow", Math.round(pos * 100));
+      slider.setAttribute("aria-valuetext", readout.textContent.replace(/\s+/g, " ").trim());
+    };
+    slider.addEventListener("keydown", (e) => {
+      const step = e.shiftKey ? 0.1 : 4 / n;   // fine (Shift) vs coarse
+      let done = true;
+      if (e.key === "ArrowRight" || e.key === "ArrowUp") place(pos + step);
+      else if (e.key === "ArrowLeft" || e.key === "ArrowDown") place(pos - step);
+      else if (e.key === "Home") place(0);
+      else if (e.key === "End") place(1);
+      else done = false;
+      if (done) e.preventDefault();
+    });
+    slider.addEventListener("focus", () => place(pos));
+    slider.addEventListener("blur", () => {
+      wraps.forEach((x) => x.classList.remove("active"));
+      if (marker) marker.setAttribute("opacity", "0");
+    });
   }
 
   /* ------------------------------------------------------------- strategy */

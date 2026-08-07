@@ -11,6 +11,7 @@
   --text: #f2f0ed;
   --muted: #94929f;
   --red: #e10600;
+  --red-text: #ff5a52;   /* accessible red for small text (>=4.5:1 on surfaces) */
   --red-dim: #a50500;
   --green: #00c26b;
   --yellow: #ffd12e;
@@ -138,6 +139,28 @@ body {
 
 .view.hidden { display: none; }
 .hidden { display: none !important; }
+
+/* ---------------------------------------------------- accessibility base */
+
+/* a single, high-visibility keyboard focus ring on the dark ground.
+   Only shows for keyboard users (:focus-visible), never on mouse click. */
+:focus { outline: none; }
+:focus-visible {
+  outline: 2.5px solid #ffffff;
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+/* on the red button the white ring needs a dark gap to read */
+.btn-red:focus-visible { outline-color: #fff; box-shadow: 0 0 0 4px rgba(225, 6, 0, 0.35); }
+/* things we made focusable via tabindex still get the ring */
+.driver-link:focus-visible, .race-chip:focus-visible,
+.rl-corner-item:focus-visible, .modal-close:focus-visible { outline-offset: 3px; }
+
+/* visually-hidden but read by screen readers (for chart summaries etc.) */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
 
 .section-head { margin-bottom: 22px; }
 
@@ -625,12 +648,13 @@ body {
 
 /* driver profile modal */
 .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
-.modal { background: var(--surface); border: 1px solid var(--line); border-radius: 3px 3px 18px 3px; max-width: 460px; width: 100%; max-height: 88vh; overflow-y: auto; }
+.modal { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 3px 3px 18px 3px; max-width: 460px; width: 100%; max-height: 88vh; overflow-y: auto; }
 .modal-head { display: flex; gap: 14px; align-items: center; padding: 18px 20px; border-bottom: 1px solid var(--line-soft); border-left: 5px solid var(--dc, #888); }
 .modal-head img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; background: var(--surface-2); }
 .modal-head .mh-name { font-size: 20px; font-weight: 900; font-style: italic; }
 .modal-head .mh-team { font-size: 12.5px; color: var(--muted); }
-.modal-close { position: absolute; top: 14px; right: 18px; cursor: pointer; color: var(--muted); font-size: 22px; line-height: 1; }
+.modal-close { position: absolute; top: 10px; right: 12px; cursor: pointer; color: var(--muted); font-size: 22px; line-height: 1; background: none; border: none; width: 34px; height: 34px; border-radius: 4px; z-index: 1; }
+.modal-close:hover { color: var(--text); background: var(--surface-2); }
 .modal-body { padding: 18px 20px; }
 .mstat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
 .mstat { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 3px; padding: 10px; text-align: center; }
@@ -702,7 +726,7 @@ body {
   font-size: 13px;
   caret-color: var(--red);
 }
-#console-in::placeholder { color: #55535f; }
+#console-in::placeholder { color: #82808b; }
 
 /* ------------------------------------------------- interactive dynamics */
 
@@ -799,7 +823,7 @@ body {
 .hero-caption {
   position: absolute; top: 14px; right: 18px;
   font-family: var(--mono);
-  font-size: 10.5px; letter-spacing: 0.34em; color: #55535f;
+  font-size: 10.5px; letter-spacing: 0.34em; color: #82808b;
 }
 .hero-speedlines {
   position: absolute; inset: 0;
@@ -933,11 +957,15 @@ body {
 .radio-sub { font-size: 11.5px; color: var(--muted); font-family: var(--mono); }
 @media (prefers-reduced-motion: reduce) { .radio-toast, .radio-wave i { animation: none !important; } }
 
-/* broadcast timing-screen colours */
+/* broadcast timing-screen colours — reinforced with a glyph so meaning
+   never depends on colour alone (WCAG 1.4.1) */
 .sector-cell.tc-green { background: rgba(0,194,107,0.16); color: var(--green); font-weight: 600; }
+.sector-cell.tc-green::before { content: "▲ "; font-size: 8px; vertical-align: middle; }
 .sector-cell.tc-purple { background: rgba(185,104,255,0.18); color: var(--purple); font-weight: 600; }
 .td-lap.tc-purple { color: var(--purple); }
 .td-lap.tc-purple::after { content: " ⬤"; font-size: 9px; vertical-align: middle; }
+/* podium hit vs miss: a check, not just green vs grey */
+.status-chip.hit::before { content: "✓ "; }
 
 /* championship fight bar */
 .fight { margin-top: 14px; }
@@ -961,7 +989,7 @@ body {
   gap: 12px;
   font-size: 11.5px;
   letter-spacing: 0.08em;
-  color: #56545e;
+  color: #82808b;
   text-transform: uppercase;
 }
 

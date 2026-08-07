@@ -14,7 +14,8 @@
   };
   const tc = (t) => TEAM_COLORS[t] || "#888";
   const dlink = (name, year) =>
-    `<span class="driver-link" data-driver="${esc(name)}" data-year="${year}">${esc(name)}</span>`;
+    `<span class="driver-link" data-driver="${esc(name)}" data-year="${year}" ` +
+    `tabindex="0" role="button" aria-label="${esc(name)} — open profile">${esc(name)}</span>`;
 
   async function getJSON(url) {
     const r = await fetch(url);
@@ -68,7 +69,7 @@
         <div class="driver-cell"><span class="team-bar" style="background:${tc(r.team)}"></span>${dlink(r.driver, season)}</div>
         <span class="fc-mini">${(r.form_prob * 100).toFixed(0)}%</span>
         <span class="fc-mini">${r.circuit_podium_rate ? (r.circuit_podium_rate * 100).toFixed(0) + "%" : "—"}</span>
-        <span class="prob-val" style="color:var(--red)">${(r.prob * 100).toFixed(0)}%</span>
+        <span class="prob-val" style="color:var(--red-text)">${(r.prob * 100).toFixed(0)}%</span>
       </div>`).join("");
     const forecast = `<div class="card">
       <div class="card-title">Podium projection${fc.event ? " — " + esc(fc.event) : ""}</div>
@@ -78,7 +79,7 @@
 
     // circuit guide (racing line) — lazy
     const guide = `<div class="card"><div class="card-title">Circuit guide — racing line</div>
-      <div class="guide-canvas-wrap"><canvas id="hub-guide-canvas" width="360" height="360"></canvas></div>
+      <div class="guide-canvas-wrap"><canvas id="hub-guide-canvas" width="360" height="360" role="img" aria-label="Racing line traced around the circuit, coloured by speed. Key figures below."></canvas></div>
       <div class="guide-stats" id="hub-guide-stats"><span>Tracing the lap…</span></div></div>`;
 
     // circuit history editions
@@ -214,12 +215,30 @@
 
   /* ----------------------------------------------------- driver profile */
 
-  async function openDriver(name, year) {
+  async function openDriver(name, year, trigger) {
     const host = document.createElement("div");
     host.className = "modal-backdrop";
-    host.innerHTML = `<div class="modal"><div class="modal-body"><div class="placeholder">Loading ${esc(name)}…</div></div></div>`;
-    host.addEventListener("click", (e) => { if (e.target === host) host.remove(); });
+    host.innerHTML = `<div class="modal" role="dialog" aria-modal="true" aria-label="${esc(name)} driver profile" tabindex="-1"><div class="modal-body"><div class="placeholder">Loading ${esc(name)}…</div></div></div>`;
+    const close = () => {
+      document.removeEventListener("keydown", onKey);
+      host.remove();
+      if (trigger && trigger.focus) trigger.focus();  // return focus to opener
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") { e.preventDefault(); close(); return; }
+      if (e.key === "Tab") {  // trap focus inside the dialog
+        const f = host.querySelectorAll('button, [href], input, [tabindex]:not([tabindex="-1"])');
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    host._close = close;
+    host.addEventListener("click", (e) => { if (e.target === host) close(); });
+    document.addEventListener("keydown", onKey);
     document.body.appendChild(host);
+    host.querySelector(".modal").focus();
     try {
       const p = await getJSON(`/api/driver?year=${year}&name=${encodeURIComponent(name)}`);
       const tm = p.teammate;
@@ -231,9 +250,9 @@
           <div class="bb-a" style="width:${tm.race[0] / (tm.race[0] + tm.race[1] || 1) * 100}%">${tm.race[0]}</div>
           <div class="bb-b" style="width:${tm.race[1] / (tm.race[0] + tm.race[1] || 1) * 100}%">${tm.race[1]}</div></div></div>` : "";
       host.querySelector(".modal").innerHTML = `
-        <span class="modal-close">&times;</span>
+        <button class="modal-close" aria-label="Close profile">&times;</button>
         <div class="modal-head" style="--dc:${tc(p.team)}">
-          ${p.headshot ? `<img src="${esc(p.headshot)}" alt="" onerror="this.style.display='none'">` : ""}
+          ${p.headshot ? `<img src="${esc(p.headshot)}" alt="Portrait of ${esc(p.driver)}" onerror="this.style.display='none'">` : ""}
           <div><div class="mh-name">${esc(p.driver)}</div><div class="mh-team">${esc(p.team)} · ${p.year}</div></div>
         </div>
         <div class="modal-body">
@@ -248,16 +267,23 @@
           <div class="section-note" style="padding:0;margin-bottom:6px">Best result: P${p.best_finish} at ${esc(p.best_finish_event || "—")}</div>
           ${tmHtml}
         </div>`;
-      host.querySelector(".modal-close").addEventListener("click", () => host.remove());
+      const btn = host.querySelector(".modal-close");
+      btn.addEventListener("click", close);
+      btn.focus();  // move focus into the dialog
     } catch (e) {
       host.querySelector(".modal-body").innerHTML = `<div class="placeholder">${esc(e.message)}</div>`;
     }
   }
 
-  // delegated: any [data-driver] element opens a profile
+  // delegated: any [data-driver] element opens a profile (mouse + keyboard)
   document.addEventListener("click", (e) => {
     const el = e.target.closest("[data-driver]");
-    if (el) openDriver(el.dataset.driver, el.dataset.year || 2025);
+    if (el) openDriver(el.dataset.driver, el.dataset.year || 2025, el);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const el = e.target.closest("[data-driver]");
+    if (el) { e.preventDefault(); openDriver(el.dataset.driver, el.dataset.year || 2025, el); }
   });
 
   /* -------------------------------------------------------------- fantasy */

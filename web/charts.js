@@ -11,6 +11,17 @@ const Charts = (() => {
     return a + (v - lo) / (hi - lo) * (b - a);
   }
 
+  // accessibility wrapper: a labelled chart is an image with a title;
+  // an unlabelled one is decorative (its numbers live in adjacent text)
+  function a11y(label) {
+    return label
+      ? `role="img" aria-label="${String(label).replace(/"/g, "&quot;")}"`
+      : `role="img" aria-hidden="true"`;
+  }
+  const titleEl = (label) => label
+    ? `<title>${String(label).replace(/[<&]/g, (c) => ({ "<": "&lt;", "&": "&amp;" }[c]))}</title>`
+    : "";
+
   function pathFrom(xs, ys, xlo, xhi, ylo, yhi, w, h, pad) {
     let d = "";
     for (let i = 0; i < xs.length; i++) {
@@ -23,7 +34,8 @@ const Charts = (() => {
 
   /* Multi-line chart over a shared x axis. */
   function lines({ x, series, w = 640, h = 200, ylabel = "", yMin = null,
-                   yMax = null, pad = { t: 10, r: 12, b: 22, l: 42 }, hlines = [] }) {
+                   yMax = null, pad = { t: 10, r: 12, b: 22, l: 42 }, hlines = [],
+                   label = "" }) {
     const xlo = x[0], xhi = x[x.length - 1];
     let lo = yMin, hi = yMax;
     if (lo === null || hi === null) {
@@ -48,11 +60,11 @@ const Charts = (() => {
       g += `<path d="${pathFrom(x, s.y, xlo, xhi, lo, hi, w, h, pad)}" fill="none" stroke="${s.color}" stroke-width="${s.width || 2}" ${s.dash ? `stroke-dasharray="${s.dash}"` : ""} stroke-linejoin="round"/>`;
     }
     if (ylabel) g += `<text x="6" y="${pad.t + 8}" class="ct-axis">${ylabel}</text>`;
-    return `<svg ${NS} viewBox="0 0 ${w} ${h}" class="ct-svg" preserveAspectRatio="none">${g}</svg>`;
+    return `<svg ${NS} viewBox="0 0 ${w} ${h}" class="ct-svg" preserveAspectRatio="none" ${a11y(label)}>${titleEl(label)}${g}</svg>`;
   }
 
   /* Filled delta area: positive above zero shaded one colour, negative the other. */
-  function delta({ x, y, w = 640, h = 140, posColor, negColor,
+  function delta({ x, y, w = 640, h = 140, posColor, negColor, label = "",
                    pad = { t: 12, r: 12, b: 22, l: 42 } }) {
     const xlo = x[0], xhi = x[x.length - 1];
     const m = Math.max(0.05, Math.max(...y.map(Math.abs)));
@@ -62,8 +74,8 @@ const Charts = (() => {
     const x0 = scale(xlo, xlo, xhi, pad.l, w - pad.r);
     const x1 = scale(xhi, xlo, xhi, pad.l, w - pad.r);
     const area = `M${x0} ${zero} ${line.replace("M", "L")} L${x1} ${zero} Z`;
-    return `<svg ${NS} viewBox="0 0 ${w} ${h}" class="ct-svg" preserveAspectRatio="none">
-      <defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1">
+    return `<svg ${NS} viewBox="0 0 ${w} ${h}" class="ct-svg" preserveAspectRatio="none" ${a11y(label)}>
+      ${titleEl(label)}<defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stop-color="${posColor}" stop-opacity="0.6"/>
         <stop offset="50%" stop-color="${posColor}" stop-opacity="0.05"/>
         <stop offset="50%" stop-color="${negColor}" stop-opacity="0.05"/>
@@ -81,7 +93,7 @@ const Charts = (() => {
      Includes a hidden scrubber marker (#<markerId>) that callers can move
      with trackScale()'s coordinate mapping. */
   function track({ x, y, faster, colors, w = 360, h = 360, lineWidth = 5,
-                   markerId = null }) {
+                   markerId = null, label = "" }) {
     const { sx, sy } = trackScale(x, y, w, h);
     let g = "";
     for (let i = 0; i < x.length - 1; i++) {
@@ -91,7 +103,7 @@ const Charts = (() => {
     if (markerId) {
       g += `<circle id="${markerId}" r="7" fill="#fff" stroke="#0b0b11" stroke-width="2.5" opacity="0"/>`;
     }
-    return `<svg ${NS} viewBox="0 0 ${w} ${h}" class="ct-track">${g}</svg>`;
+    return `<svg ${NS} viewBox="0 0 ${w} ${h}" class="ct-track" ${a11y(label)}>${titleEl(label)}${g}</svg>`;
   }
 
   /* The exact coordinate mapping track() uses — for positioning markers. */
@@ -130,7 +142,7 @@ const Charts = (() => {
 
   /* Horizontal bar list: rows of {label, value, color, sub}. */
   function bars({ rows, w = 640, rowH = 26, maxValue = null, unit = "",
-                 fmt = (v) => v }) {
+                 fmt = (v) => v, label = "" }) {
     const max = maxValue ?? Math.max(...rows.map((r) => r.value), 1e-9);
     const labelW = 96, valW = 66, h = rows.length * rowH + 6;
     let g = "";
@@ -142,7 +154,7 @@ const Charts = (() => {
       g += `<text x="${w - 4}" y="${y + rowH / 2 + 3}" text-anchor="end" class="ct-bval">${fmt(r.value)}${unit}</text>`;
       if (r.sub) g += `<text x="${labelW + bw + 6}" y="${y + rowH / 2 + 3}" class="ct-bsub">${r.sub}</text>`;
     });
-    return `<svg ${NS} viewBox="0 0 ${w} ${h}" class="ct-svg">${g}</svg>`;
+    return `<svg ${NS} viewBox="0 0 ${w} ${h}" class="ct-svg" ${a11y(label)}>${titleEl(label)}${g}</svg>`;
   }
 
   /* Side-profile modern F1 car — a clean, single-silhouette illustration.

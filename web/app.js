@@ -71,7 +71,7 @@ function switchView(view) {
 function renderSeasonSwitch() {
   const el = $("#season-switch");
   el.innerHTML = state.years.map((y) =>
-    `<button class="${y === state.year ? "active" : ""}" data-year="${y}">${y}</button>`).join("");
+    `<button class="${y === state.year ? "active" : ""}" data-year="${y}" aria-pressed="${y === state.year}" aria-label="${y} season">${y}</button>`).join("");
   el.querySelectorAll("button").forEach((b) =>
     b.addEventListener("click", () => {
       state.year = Number(b.dataset.year);
@@ -137,16 +137,19 @@ async function loadDashboard() {
   const races = await getJSON(`/api/races/${y}`);
   state.raceCache[y] = races.races;
   $("#dash-strip").innerHTML = races.races.map((r) => `
-    <div class="race-chip" style="--team:${teamColor(r.winner_team)}" data-round="${r.round}">
+    <div class="race-chip" style="--team:${teamColor(r.winner_team)}" data-round="${r.round}"
+         tabindex="0" role="button" aria-label="Round ${r.round}, ${esc(r.event)}, winner ${esc(r.winner || "none")}">
       <div class="rc-round">R${String(r.round).padStart(2, "0")}</div>
       <div class="rc-event">${esc(r.event.replace(" Grand Prix", " GP"))}</div>
       <div class="rc-winner">${esc(r.winner || "—")}</div>
     </div>`).join("");
-  $("#dash-strip").querySelectorAll(".race-chip").forEach((chip) =>
-    chip.addEventListener("click", () => {
-      state.selectedRound = Number(chip.dataset.round);
-      switchView("races");
-    }));
+  $("#dash-strip").querySelectorAll(".race-chip").forEach((chip) => {
+    const open = () => { state.selectedRound = Number(chip.dataset.round); switchView("races"); };
+    chip.addEventListener("click", open);
+    chip.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+    });
+  });
 
   try {
     const m = await getJSON("/api/model");
@@ -274,7 +277,7 @@ async function loadStandings() {
         <td class="num">${r.Pos}</td>
         <td><div class="driver-cell">
           <span class="team-bar" style="background:${teamColor(r.Team)}"></span>
-          <div><span class="driver-link" data-driver="${esc(r.FullName)}" data-year="${state.year}">${esc(r.FullName)}</span><div class="team-name">${esc(r.Team)}</div></div>
+          <div><span class="driver-link" data-driver="${esc(r.FullName)}" data-year="${state.year}" tabindex="0" role="button" aria-label="${esc(r.FullName)} — open profile">${esc(r.FullName)}</span><div class="team-name">${esc(r.Team)}</div></div>
         </div></td>
         <td class="num" style="font-weight:600">${r.Points}</td>
         <td><div class="points-bar-track"><div class="points-bar" style="width:${(r.Points / maxD) * 100}%"></div></div></td>
