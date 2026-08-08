@@ -24,6 +24,9 @@ RUN uv run f1ml setup
 
 EXPOSE 5173
 ENV PORT=5173 HOST=0.0.0.0
+# Keep the model current on its own: every 24 h the running container pulls the
+# season's latest results and retrains. Set to empty to disable.
+ENV PITWALL_AUTO_REFRESH=24
 # invoke the venv directly (no uv at runtime) so it also runs read-only /
 # as a non-root user, e.g. on Hugging Face Spaces
 CMD ["/app/.venv/bin/python", "-m", "f1_ml.cli", "serve"]

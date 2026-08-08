@@ -71,15 +71,25 @@ When it finishes it prints your URL:
 Pit Wall is live:  http://<PUBLIC_IP>/
 ```
 
-## 5. Updating later
+## 5. It keeps itself current
 
-SSH back in and re-run the same command — it pulls the latest code, rebuilds,
-and restarts. To refresh the F1 data/models inside the running container without
-a rebuild:
+You don't have to do anything to track the 2026 season. The container runs with
+`PITWALL_AUTO_REFRESH=24`, so once a day it pulls the latest results and retrains
+— as each race runs, the live site fetches it and the model learns from it. The
+FastF1 cache, accumulated season data, and retrained models live on Docker
+volumes (`pitwall_cache`, `pitwall_data`, `pitwall_models`), so redeploys keep
+everything the model has learned.
+
+To force a refresh immediately instead of waiting for the daily one:
 
 ```bash
 sudo docker exec pitwall /app/.venv/bin/python -m f1_ml.cli refresh
 ```
+
+### Updating the code later
+
+SSH back in and re-run the deploy one-liner — it pulls the latest code, rebuilds,
+and restarts, reusing the volumes so no season data is lost.
 
 ## 6. (Optional) A real domain + HTTPS
 

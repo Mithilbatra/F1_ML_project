@@ -445,4 +445,61 @@ def create_app() -> Flask:
         return Response(stream(), mimetype="text/plain",
                         headers={"X-Accel-Buffering": "no", "Cache-Control": "no-cache"})
 
+    def _invalidate_caches() -> None:
+        _hub_cache.update(t=0.0, data=None)  # force a fresh forecast next call
+
+    _maybe_start_auto_refresh(_invalidate_caches)
+
     return app
+
+
+# --------------------------------------------------------------- auto-refresh
+
+_auto_refresh_started = False
+
+
+def _maybe_start_auto_refresh(on_done=None) -> bool:
+    """Keep the deployed model current on its own.
+
+    When PITWALL_AUTO_REFRESH is set (to a number of hours), a daemon thread
+    periodically pulls the season's latest results and retrains — so as the
+    2026 races run, the live app fetches each new one and the model learns from
+    it without anyone touching the server. Because predictions read the model
+    files fresh on every request, the retrained model is served immediately;
+    `on_done` just clears the cached forecast.
+
+    Off by default (unset) so local `f1ml serve` doesn't reach for the network;
+    the Docker image turns it on.
+    """
+    global _auto_refresh_started
+    raw = os.environ.get("PITWALL_AUTO_REFRESH")
+    if not raw or _auto_refresh_started:
+        return False
+    try:
+        interval = max(0.25, float(raw)) * 3600.0
+    except ValueError:
+        interval = 24 * 3600.0
+    delay = float(os.environ.get("PITWALL_AUTO_REFRESH_DELAY", "60"))
+
+    import threading
+
+    def loop() -> None:
+        import time
+
+        from . import pipeline
+        time.sleep(delay)  # let startup finish before the first heavy pull
+        while True:
+            try:
+                logging.info("Auto-refresh: bringing data + model up to date…")
+                result = pipeline.refresh(log=logging.info)
+                if on_done:
+                    on_done()
+                logging.info("Auto-refresh done — trained on %s.", result["years"])
+            except Exception:
+                logging.exception("Auto-refresh failed; retrying next interval.")
+            time.sleep(interval)
+
+    threading.Thread(target=loop, name="pitwall-auto-refresh", daemon=True).start()
+    _auto_refresh_started = True
+    logging.info("Auto-refresh enabled: every %.2g h.", interval / 3600.0)
+    return True

@@ -52,11 +52,18 @@ sudo docker build -t "${NAME}:latest" "$DIR"
 
 # 4) Run -------------------------------------------------------------------
 # --restart unless-stopped survives reboots; the console runner is disabled
-# because this is public.
+# because this is public. The named volumes persist the FastF1 cache, the data
+# the auto-refresh accumulates through the season, and the retrained models —
+# so a redeploy keeps everything the model has learned (they seed from the
+# image's bundled 2024–25 data the first time).
 echo "==> (Re)starting container…"
 sudo docker rm -f "${NAME}" >/dev/null 2>&1 || true
 sudo docker run -d --name "${NAME}" --restart unless-stopped \
-  -p "${PORT}:5173" -e PITWALL_DISABLE_CONSOLE=1 "${NAME}:latest"
+  -p "${PORT}:5173" -e PITWALL_DISABLE_CONSOLE=1 \
+  -v pitwall_cache:/app/fastf1_cache_dir \
+  -v pitwall_data:/app/data \
+  -v pitwall_models:/app/models \
+  "${NAME}:latest"
 
 # 5) Host firewall ---------------------------------------------------------
 # Oracle's images ship blocking everything but SSH; open the port at the OS

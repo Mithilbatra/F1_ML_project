@@ -69,7 +69,9 @@ uv run f1ml refresh                # this season; add --year 2025 to pin one
 ```
 
 `refresh` is idempotent and safe to run on a schedule: if there's no new data
-(or no internet) it just rebuilds and retrains from what's on disk. To do the
+(or no internet) it just rebuilds and retrains from what's on disk. Fetching a
+live season is safe too — rounds that haven't happened yet are skipped — so
+mid-2026 it pulls only the races that have run and retrains on them. To do the
 steps by hand instead:
 
 ```bash
@@ -78,6 +80,17 @@ uv run f1ml merge --year 2025      # raw CSVs -> data/processed/*.csv
 uv run f1ml features               # rebuild the feature table
 uv run f1ml train --model all      # retrain, save models/ + metrics.json
 ```
+
+### Keeping current on its own (the deployed app)
+
+The Docker image sets `PITWALL_AUTO_REFRESH=24`, so the running container
+refreshes itself every 24 h: it pulls the season's latest results and retrains,
+with no restart needed (predictions read the model files fresh each request).
+As the 2026 races run, the live app fetches each new one and the model learns
+from it automatically. Set the env var to another number of hours to change the
+cadence, or to empty to turn it off. In the Oracle deploy the FastF1 cache,
+accumulated data, and retrained models are kept on Docker volumes, so a redeploy
+never loses what the season has taught the model.
 
 ## The `f1ml` commands
 
@@ -212,7 +225,8 @@ src/f1_ml/            the package
   fantasy.py          F1 Fantasy points projection + team optimiser
   racingline.py       track-map → racing line + lap time (needs 'vision' extra)
   cli.py              the `f1ml` command
-  server.py           Flask API + console runner
+  server.py           Flask API + console runner + auto-refresh scheduler
+  pipeline.py         fetch → rebuild → retrain → backtest (shared refresh loop)
   snapshot.py         pre-render the app to a static site (for GitHub Pages)
 web/                  dashboard frontend (no build step)
   index.html styles.css app.js charts.js telemetry.js companion.js racingline.js

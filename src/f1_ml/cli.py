@@ -289,32 +289,13 @@ def cmd_refresh(args) -> None:
     schedule — if there's no new data (or no network) it just rebuilds."""
     from datetime import datetime, timezone
 
-    from . import data as datamod
-    from .backtest import backtest_year
-    from .features import build_and_save, feature_columns
-    from .modeling import train_all
+    from . import pipeline
 
     year = args.year or datetime.now(timezone.utc).year
     _print_header(f"Refresh — season {year}")
-
-    if not args.no_fetch:
-        try:
-            print(f"  Pulling {year} from FastF1…")
-            written = datamod.fetch_year(year)
-            print(f"  {len(written)} session files fetched.")
-            datamod.merge_year(year)
-        except Exception as exc:
-            print(f"  Fetch skipped ({exc}); rebuilding from the data on disk.")
-
-    df = build_and_save()
-    print(f"  Features rebuilt: {len(df)} rows, {len(feature_columns(df))} columns.")
-    report = train_all(df)
-    best = report["models"][report["best_model"]]["metrics"]
-    print(f"  Retrained — best model {report['best_model']}, "
-          f"top-3 hit rate {best['top3_hit_rate']:.1%}.")
-    for y in datamod.available_years():
-        backtest_year(y)
-    print("  Backtests refreshed. Everything is up to date.")
+    result = pipeline.refresh(year, fetch=not args.no_fetch)
+    print(f"  Trained on seasons {', '.join(str(y) for y in result['years'])}. "
+          f"Everything is up to date.")
 
 
 def cmd_snapshot(args) -> None:
