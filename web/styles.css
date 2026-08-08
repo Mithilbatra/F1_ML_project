@@ -822,61 +822,28 @@ body {
 .brand-slash.ghost1 { left: -9px; opacity: 0.35; }
 .brand-slash.ghost2 { left: -17px; opacity: 0.14; }
 
-/* dashboard hero: car at speed on track */
+/* dashboard hero: a real F1 car at speed (photo, dark-graded to blend) */
 .hero-track {
   position: relative;
-  height: 172px;
+  height: 230px;
   margin-bottom: 18px;
   border: 1px solid var(--line-soft);
   border-radius: 3px 3px 16px 3px;
   overflow: hidden;
+  /* gradients (top) darken edges for legibility + blend into the theme;
+     photo sits behind them; solid colour is the fallback */
   background:
-    radial-gradient(70% 120% at 34% 78%, rgba(225, 6, 0, 0.08), transparent 60%),
-    linear-gradient(180deg, #141019 0%, #14141c 60%, #0e0e14 100%);
+    linear-gradient(90deg, rgba(14, 14, 20, 0.72) 0%, rgba(14, 14, 20, 0.20) 34%, rgba(14, 14, 20, 0) 62%),
+    linear-gradient(180deg, rgba(14, 14, 20, 0.55) 0%, rgba(14, 14, 20, 0) 34%, rgba(14, 14, 20, 0.28) 72%, rgba(14, 14, 20, 0.82) 100%),
+    radial-gradient(120% 90% at 78% 40%, rgba(225, 6, 0, 0.14), transparent 55%),
+    url("assets/hero-car.jpg") center 44% / cover no-repeat,
+    #0e0e14;
 }
 .hero-caption {
-  position: absolute; top: 14px; right: 18px;
+  position: absolute; top: 14px; right: 18px; z-index: 1;
   font-family: var(--mono);
-  font-size: 10.5px; letter-spacing: 0.34em; color: #82808b;
-}
-.hero-speedlines {
-  position: absolute; inset: 0;
-  background: repeating-linear-gradient(
-    90deg,
-    transparent 0 90px,
-    rgba(242, 240, 237, 0.05) 90px 150px,
-    transparent 150px 240px);
-  animation: speedlines 0.9s linear infinite;
-}
-.hero-speedlines.near {
-  background: repeating-linear-gradient(
-    90deg,
-    transparent 0 160px,
-    rgba(225, 6, 0, 0.10) 160px 235px,
-    transparent 235px 400px);
-  animation-duration: 0.5s;
-}
-/* streaks sweep rightward = the car (nose left) is at speed heading left */
-@keyframes speedlines { from { transform: translateX(-240px); } to { transform: translateX(0); } }
-.hero-track:hover .hero-speedlines { animation-duration: 0.45s; }
-.hero-track:hover .hero-speedlines.near { animation-duration: 0.25s; }
-
-.hero-car {
-  position: absolute;
-  left: 5%;
-  bottom: 6px;
-  width: min(500px, 72%);
-  animation: car-launch 0.9s cubic-bezier(0.16, 1, 0.3, 1) both,
-             car-ride 1.1s ease-in-out 0.9s infinite alternate;
-  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.55));
-}
-@keyframes car-launch {
-  from { transform: translateX(90vw) skewX(4deg); filter: blur(5px); }
-  to { transform: none; filter: blur(0); }
-}
-@keyframes car-ride {
-  from { transform: translateY(0); }
-  to { transform: translateY(-2.5px); }
+  font-size: 10.5px; letter-spacing: 0.34em; color: #cdd2da;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
 }
 .car-svg { width: 100%; height: auto; display: block; }
 .car-svg .rim {
@@ -928,7 +895,7 @@ body {
 .stat:hover::after, .race-chip:hover::after, .btn-red:hover::after, .tile:hover::after { left: 130%; }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-speedlines, .hero-speedlines.near, .hero-car, .car-svg .rim { animation: none !important; }
+  .car-svg .rim { animation: none !important; }
   .stat::after, .race-chip::after, .btn-red::after, .tile::after { display: none; }
 }
 

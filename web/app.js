@@ -665,7 +665,7 @@ window.radio = function (title, sub, color) {
 };
 
 function initCarFX() {
-  // drop the SVG car into every [data-car] slot (hero + lap progress)
+  // drop the SVG car into every [data-car] slot (the lap-progress marker)
   document.querySelectorAll("[data-car]").forEach((el) => {
     el.innerHTML = Charts.car();
   });
