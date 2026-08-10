@@ -1,17 +1,16 @@
 name: Deploy static dashboard to Pages
 
-# Optional free static mirror of the dashboard on GitHub Pages (no card).
-# Disabled by default so it doesn't post failed runs before Pages is turned on.
-# To use it: repo Settings → Pages → Source: "GitHub Actions", then either run
-# this workflow from the Actions tab, or uncomment the schedule/push triggers
-# below to keep it auto-updating (it pulls latest results, retrains, republishes).
+# Free static deploy of the dashboard on GitHub Pages (no card).
+# One-time setup: repo Settings → Pages → Source: "GitHub Actions".
+# Then it runs on demand (Actions tab), every Monday after the race (pulling the
+# latest results + retraining), and on pushes that change the app.
 on:
   workflow_dispatch:
-  # schedule:
-  #   - cron: "0 6 * * 1"          # every Monday 06:00 UTC, after the race
-  # push:
-  #   branches: [main]
-  #   paths: ["web/**", "src/**", ".github/workflows/pages.yml"]
+  schedule:
+    - cron: "0 6 * * 1"          # every Monday 06:00 UTC, after the race
+  push:
+    branches: [main]
+    paths: ["web/**", "src/**", ".github/workflows/pages.yml"]
 
 # Least privilege the Pages deploy needs.
 permissions:
