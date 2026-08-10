@@ -20,6 +20,20 @@ NAME="pitwall"
 
 echo "==> Pit Wall deploy on $(hostname) — public port ${PORT}"
 
+# 0) Swap ------------------------------------------------------------------
+# Headroom for the 1 GB Always Free shape (VM.Standard.E2.1.Micro), so the
+# build and the ML libraries don't get OOM-killed. Harmless on bigger VMs.
+if [ -z "$(swapon --show 2>/dev/null)" ] && [ ! -e /swapfile ]; then
+  echo "==> Adding 2G swap (headroom for small VMs)…"
+  sudo fallocate -l 2G /swapfile 2>/dev/null || \
+    sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
+  sudo chmod 600 /swapfile
+  sudo mkswap /swapfile >/dev/null
+  sudo swapon /swapfile
+  grep -q '/swapfile' /etc/fstab || \
+    echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab >/dev/null
+fi
+
 # 1) Docker + git ----------------------------------------------------------
 install_pkg() {
   if command -v apt-get >/dev/null 2>&1; then
