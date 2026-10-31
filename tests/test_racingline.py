@@ -1,5 +1,9 @@
 """Racing-line analyzer tests. Skipped unless the 'vision' extra is installed."""
 
+import io
+import subprocess
+import sys
+
 import numpy as np
 import pytest
 
@@ -123,3 +127,37 @@ def test_speed_dependent_grip_slows_tight_corners():
     assert v_tight < v_fast
     assert v_tight * 3.6 < 110      # a 15 m hairpin: well under 110 km/h
     assert v_fast >= car["v_max"] - 1  # a 300 m sweeper: near top speed
+
+
+# ------------------------------------------------------------ upload limits
+
+def test_decode_rejects_oversized_map():
+    _, png = cv2.imencode(".png", np.zeros((10, rl.MAX_UPLOAD_SIDE + 1, 3), np.uint8))
+    with pytest.raises(ValueError, match="longest side"):
+        rl.decode_image(png.tobytes())
+
+
+def test_decompression_bomb_refused_without_allocating(tmp_path):
+    # A fresh process: OpenCV reads its pixel cap only once, when it loads.
+    Image = pytest.importorskip("PIL.Image")
+    bomb = tmp_path / "bomb.png"
+    Image.new("1", (20000, 20000)).save(bomb)  # tiny file, ~1.2 GB once decoded
+    code = ("import resource, sys\n"
+            "from f1_ml import racingline as rl\n"
+            "try:\n"
+            "    rl.decode_image(open(sys.argv[1], 'rb').read())\n"
+            "except ValueError:\n"
+            "    print(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)\n")
+    out = subprocess.run([sys.executable, "-c", code, str(bomb)],
+                         capture_output=True, text=True, check=True)
+    peak_mb = int(out.stdout) / (1024 * 1024 if sys.platform == "darwin" else 1024)
+    assert 0 < peak_mb < 600  # decoding it would need 1200+ MB
+
+
+def test_upload_over_limit_gets_json_413():
+    from f1_ml.server import create_app
+
+    big = (io.BytesIO(b"0" * (9 * 1024 * 1024)), "big.png")
+    r = create_app().test_client().post("/api/racingline", data={"image": big})
+    assert r.status_code == 413
+    assert "too large" in r.get_json()["error"]

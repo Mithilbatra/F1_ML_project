@@ -66,6 +66,11 @@ def _clean_master(year: int) -> pd.DataFrame:
 
 def create_app() -> Flask:
     app = Flask(__name__, static_folder=str(WEB_DIR), static_url_path="")
+    app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024  # track-map uploads
+
+    @app.errorhandler(413)
+    def too_large(_):
+        return jsonify({"error": "Upload is too large (8 MB max)."}), 413
 
     @app.get("/")
     def index():

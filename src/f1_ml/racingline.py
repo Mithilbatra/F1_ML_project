@@ -21,7 +21,13 @@ extra is installed (`uv sync --extra vision`).
 
 from __future__ import annotations
 
+import os
+
 import numpy as np
+
+# OpenCV reads this once, when it loads: without it a tiny upload can decode to
+# gigabytes (a "decompression bomb") before any size check of ours runs.
+os.environ.setdefault("OPENCV_IO_MAX_IMAGE_PIXELS", str(4096 * 4096))
 
 try:
     import cv2
@@ -539,9 +545,18 @@ def load_image(path: str) -> np.ndarray:
     return img
 
 
+MAX_UPLOAD_SIDE = 3000  # px; bigger maps only cost CPU in the pure-Python skeleton step
+
+
 def decode_image(data: bytes) -> np.ndarray:
-    arr = np.frombuffer(data, np.uint8)
-    img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    try:
+        img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
+    except cv2.error:  # over OPENCV_IO_MAX_IMAGE_PIXELS
+        img = None
     if img is None:
-        raise ValueError("Could not decode the uploaded image.")
+        raise ValueError("Could not decode the image (unreadable, or over 16 megapixels).")
+    h, w = img.shape[:2]
+    if max(h, w) > MAX_UPLOAD_SIDE:
+        raise ValueError(f"Image is {w}×{h} px; upload a map at most "
+                         f"{MAX_UPLOAD_SIDE} px on its longest side.")
     return img
