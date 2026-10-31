@@ -27,7 +27,12 @@ def build(out_dir: Path) -> dict:
     from .server import create_app
 
     out_dir = Path(out_dir)
+    marker = out_dir / "data" / "static.json"  # every snapshot writes this
     if out_dir.exists():
+        # only ever replace an earlier snapshot (or an empty folder)
+        if not out_dir.is_dir() or (any(out_dir.iterdir()) and not marker.exists()):
+            raise SystemExit(f"Refusing to replace {out_dir}: it is not an earlier "
+                             "snapshot. Choose another --out.")
         shutil.rmtree(out_dir)
     shutil.copytree(WEB_DIR, out_dir)
     data_root = out_dir / "data" / "api"
@@ -84,7 +89,7 @@ def build(out_dir: Path) -> dict:
              out_name="circuit-guide")
 
     # a flag file the frontend can read to know it's the static build
-    (out_dir / "data" / "static.json").write_text(json.dumps({"static": True}))
+    marker.write_text(json.dumps({"static": True}))
 
     log.info("Snapshot: %d files written, %d skipped", len(written), len(skipped))
     return {"out_dir": str(out_dir), "written": len(written),
