@@ -174,14 +174,16 @@ def train_all(
     return report
 
 
+def best_model_name() -> str:
+    """The model training picked as best (the one the dashboard marks "In use")."""
+    if METRICS_FILE.exists():
+        return json.loads(METRICS_FILE.read_text())["best_model"]
+    return "rf"
+
+
 def load_artifact(model_name: str = None) -> dict:
     """Load a saved model artifact (defaults to the best from metrics.json)."""
-    if model_name is None:
-        if METRICS_FILE.exists():
-            model_name = json.loads(METRICS_FILE.read_text())["best_model"]
-        else:
-            model_name = "rf"
-    path = MODELS_DIR / f"podium_{model_name}.pkl"
+    path = MODELS_DIR / f"podium_{model_name or best_model_name()}.pkl"
     if not path.exists():
         raise FileNotFoundError(f"{path} not found. Run `f1ml train` first.")
     return joblib.load(path)

@@ -140,10 +140,11 @@ def cmd_evaluate(args) -> None:
 
 
 def cmd_predict(args) -> None:
+    from .modeling import best_model_name
     from .predict import predict_round
 
     _print_header(f"Podium prediction — {args.year} round {args.round}")
-    out = predict_round(args.year, args.round, args.model)
+    out = predict_round(args.year, args.round, args.model or best_model_name())
     event = out["EventName"].iloc[0]
     print(f"  {event}\n")
     view = out[["FullName", "TeamName", "QualyPos", "prob", "RacePos"]].copy()
@@ -161,10 +162,12 @@ def cmd_predict(args) -> None:
 
 def cmd_backtest(args) -> None:
     from .backtest import backtest_year
+    from .modeling import best_model_name
 
-    _print_header(f"Walk-forward backtest — {args.year} ({args.model})")
+    model = args.model or best_model_name()
+    _print_header(f"Walk-forward backtest — {args.year} ({model})")
     print("  Retraining before every race; this takes ~30s...\n")
-    report = backtest_year(args.year, args.model)
+    report = backtest_year(args.year, model)
     for r in report["races"]:
         bar = "#" * r["model_hits"] + "." * (3 - r["model_hits"])
         print(f"   R{r['round']:>2} {r['event'][:30]:<30} model {r['model_hits']}/3 [{bar}]  grid {r['baseline_hits']}/3")
@@ -389,12 +392,14 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("predict", help="podium picks for one race")
     p.add_argument("--year", type=int, required=True)
     p.add_argument("--round", type=int, required=True)
-    p.add_argument("--model", choices=["rf", "gbdt"], default="rf")
+    p.add_argument("--model", choices=["rf", "gbdt"], default=None,
+                   help="default: the best model from training")
     p.set_defaults(func=cmd_predict)
 
     p = sub.add_parser("backtest", help="walk-forward backtest over a season")
     p.add_argument("--year", type=int, required=True)
-    p.add_argument("--model", choices=["rf", "gbdt"], default="rf")
+    p.add_argument("--model", choices=["rf", "gbdt"], default=None,
+                   help="default: the best model from training")
     p.set_defaults(func=cmd_backtest)
 
     p = sub.add_parser("standings", help="championship standings for a season")

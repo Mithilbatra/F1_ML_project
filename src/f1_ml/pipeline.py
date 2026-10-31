@@ -55,7 +55,7 @@ def refresh(year: int | None = None, *, fetch: bool = True,
     years = datamod.available_years()
     if backtest:
         for y in years:
-            backtest_year(y)
+            backtest_year(y, report["best_model"])
         log("  Backtests refreshed.")
 
     return {

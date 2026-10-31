@@ -192,8 +192,9 @@ def create_app() -> Flask:
     @app.get("/api/backtest/<int:year>")
     def backtest(year: int):
         from .backtest import backtest_path
+        from .modeling import best_model_name
 
-        path = backtest_path(year, "rf")
+        path = backtest_path(year, best_model_name())
         if not path.exists():
             return jsonify({"available": False,
                             "hint": f"Run `f1ml backtest --year {year}` in the console."})
@@ -201,10 +202,11 @@ def create_app() -> Flask:
 
     @app.get("/api/predict/<int:year>/<int:rnd>")
     def predict(year: int, rnd: int):
+        from .modeling import best_model_name
         from .predict import predict_round
 
         try:
-            out = predict_round(year, rnd)
+            out = predict_round(year, rnd, best_model_name())
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 400
         cols = ["FullName", "TeamName", "QualyPos", "GridPosition",
