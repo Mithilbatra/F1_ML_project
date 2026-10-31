@@ -115,7 +115,8 @@ never loses what the season has taught the model.
 
 Every command except `serve` is also runnable from the **Console** tab in the
 web UI — the browser shells out to the exact same CLI (whitelisted, no shell
-metacharacters) and streams the output back live.
+metacharacters) and streams the output back live. It only answers requests from
+the same machine, so it is off inside Docker and on hosted deploys.
 
 ## The dashboard
 

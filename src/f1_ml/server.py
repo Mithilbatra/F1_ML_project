@@ -410,11 +410,14 @@ def create_app() -> Flask:
 
     @app.post("/api/command")
     def command():
-        # on public deployments the console runner is disabled so strangers
-        # can't spin up f1ml jobs on the host
-        if os.environ.get("PITWALL_DISABLE_CONSOLE"):
-            return jsonify({"error": "The console is disabled on this hosted "
-                            "demo. Run it locally to use the terminal."}), 403
+        # Only for whoever sits at this machine: nobody else on the network (e.g.
+        # a Docker port published to the LAN) may retrain or refetch on the host.
+        # A reverse proxy on the same host also looks local, so public deploys
+        # still set PITWALL_DISABLE_CONSOLE.
+        if (os.environ.get("PITWALL_DISABLE_CONSOLE")
+                or request.remote_addr not in ("127.0.0.1", "::1")):
+            return jsonify({"error": "The console only runs on your own machine "
+                            "— start the app locally with `f1ml serve`."}), 403
         payload = request.get_json(silent=True) or {}
         raw = str(payload.get("command", "")).strip()
         try:
