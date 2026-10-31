@@ -10,6 +10,7 @@ DATA_DIR = PROJECT_ROOT / "data"
 RAW_DIR = DATA_DIR / "raw"
 RAW_QUALY_DIR = RAW_DIR / "qualifying"
 RAW_RACE_DIR = RAW_DIR / "race"
+RAW_SPRINT_DIR = RAW_DIR / "sprint"
 PROCESSED_DIR = DATA_DIR / "processed"
 
 MODELS_DIR = PROJECT_ROOT / "models"

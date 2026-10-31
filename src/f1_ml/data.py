@@ -12,6 +12,7 @@ from .config import (
     PROCESSED_DIR,
     RAW_QUALY_DIR,
     RAW_RACE_DIR,
+    RAW_SPRINT_DIR,
     master_file,
 )
 
@@ -27,20 +28,28 @@ QUALY_COLUMNS = ["Position", "FullName", "TeamName", "Q1", "Q2", "Q3"]
 MERGE_KEYS = ["Year", "RoundNumber", "EventName", "FullName", "TeamName"]
 RACE_OUTCOME_COLUMNS = ["GridPosition", "RacePos", "Status", "Points", "Laps"]
 
+# FastF1 session code + raw folder for each session kind we keep
+_SESSIONS = {
+    "qualifying": ("Q", RAW_QUALY_DIR),
+    "race": ("R", RAW_RACE_DIR),
+    "sprint": ("S", RAW_SPRINT_DIR),
+}
+
 
 # ---------------------------------------------------------------- fetching
 
 def fetch_year(year: int, kind: str = "both") -> list[str]:
     """Download session results for a season via FastF1 and save raw CSVs.
 
-    kind: "race", "qualifying" or "both". Returns list of files written.
+    kind: "race", "qualifying", "sprint" or "both" (all three). Returns list of
+    files written.
     """
     import fastf1  # lazy: heavy import + not needed for offline work
 
     FASTF1_CACHE_DIR.mkdir(exist_ok=True)
     fastf1.Cache.enable_cache(FASTF1_CACHE_DIR)
 
-    kinds = ["qualifying", "race"] if kind == "both" else [kind]
+    kinds = ["qualifying", "race", "sprint"] if kind == "both" else [kind]
     schedule = fastf1.get_event_schedule(year)
     written: list[str] = []
 
@@ -51,8 +60,10 @@ def fetch_year(year: int, kind: str = "both") -> list[str]:
             continue  # pre-season testing has no meaningful classification
 
         for k in kinds:
-            session_code = "R" if k == "race" else "Q"
-            out_dir = (RAW_RACE_DIR if k == "race" else RAW_QUALY_DIR) / str(year)
+            if k == "sprint" and "sprint" not in str(event["EventFormat"]):
+                continue  # only sprint weekends have one
+            session_code, raw_dir = _SESSIONS[k]
+            out_dir = raw_dir / str(year)
             out_dir.mkdir(parents=True, exist_ok=True)
             try:
                 session = fastf1.get_session(year, event_name, session_code)
@@ -64,14 +75,13 @@ def fetch_year(year: int, kind: str = "both") -> list[str]:
                 log.warning("No results for %s %s (%s)", year, event_name, k)
                 continue
 
-            cols = RACE_COLUMNS if k == "race" else QUALY_COLUMNS
+            cols = QUALY_COLUMNS if k == "qualifying" else RACE_COLUMNS
             results = session.results[cols].copy()
             results.insert(0, "EventName", event_name)
             results.insert(0, "RoundNumber", round_number)
             results.insert(0, "Year", year)
 
-            suffix = "Race" if k == "race" else "Qualifying"
-            name = f"{year}_Round_{str(round_number).zfill(2)}_{event_name.replace(' ', '_')}_{suffix}.csv"
+            name = f"{year}_Round_{str(round_number).zfill(2)}_{event_name.replace(' ', '_')}_{k.capitalize()}.csv"
             path = out_dir / name
             results.to_csv(path, index=False)
             written.append(str(path))
@@ -81,6 +91,14 @@ def fetch_year(year: int, kind: str = "both") -> list[str]:
 
 
 # ----------------------------------------------------------------- merging
+
+def driver_key(names: pd.Series) -> pd.Series:
+    """Driver name with aliases resolved and accents stripped, for joins across fetches."""
+    from .features import DRIVER_MAPPING  # avoid import cycle
+
+    return (names.replace(DRIVER_MAPPING).str.normalize("NFKD")
+            .str.encode("ascii", "ignore").str.decode("ascii"))
+
 
 def merge_year(year: int) -> pd.DataFrame:
     """Combine raw qualifying + race CSVs for a season into one master file."""
@@ -110,6 +128,20 @@ def merge_year(year: int) -> pd.DataFrame:
     master = qualy.merge(
         race[MERGE_KEYS + RACE_OUTCOME_COLUMNS], on=MERGE_KEYS, how="left"
     )
+
+    # Sprint weekends award points too. FastF1 spells some names differently
+    # between fetches (accents, "Andrea Kimi Antonelli") and renames teams, so
+    # match on round + a normalised driver name, not the exact strings.
+    sprint_files = sorted((RAW_SPRINT_DIR / str(year)).glob("*.csv"))
+    sprint_frames = [f for f in map(pd.read_csv, sprint_files) if not f.empty]
+    if sprint_frames:
+        sprint = pd.concat(sprint_frames, ignore_index=True)
+        keys = ["Year", "RoundNumber", "_driver"]
+        sprint["_driver"] = driver_key(sprint["FullName"])
+        master["_driver"] = driver_key(master["FullName"])
+        sprint = sprint.rename(columns={"Points": "SprintPoints"})[keys + ["SprintPoints"]]
+        master = master.merge(sprint, on=keys, how="left").drop(columns="_driver")
+
     master = master.sort_values(["Year", "RoundNumber", "QualyPos"])
 
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
@@ -146,16 +178,24 @@ def load_master(years: list[int] | None = None) -> pd.DataFrame:
 
 # --------------------------------------------------------------- standings
 
+def total_points(df: pd.DataFrame) -> pd.Series:
+    """Grand Prix plus sprint points (master files built without sprints have none)."""
+    points = df["Points"].fillna(0)
+    return points + df["SprintPoints"].fillna(0) if "SprintPoints" in df else points
+
+
 def compute_standings(master: pd.DataFrame, year: int) -> dict:
     """Driver and constructor standings for a season, from race results."""
     from .features import DRIVER_MAPPING, TEAM_MAPPING  # avoid import cycle
 
     df = master[master["Year"] == year].copy()
     df = df[~df["EventName"].str.contains("Pre-Season", case=False, na=False)]
+    # shortcut: a driver who scores in a sprint but misses that Grand Prix loses
+    # those sprint points; count sprint rows separately if that ever matters
     df = df[df["RacePos"].notna()]
     df["FullName"] = df["FullName"].replace(DRIVER_MAPPING)
     df["TeamName"] = df["TeamName"].replace(TEAM_MAPPING)
-    df["Points"] = df["Points"].fillna(0)
+    df["Points"] = total_points(df)
 
     drivers = (
         df.groupby("FullName")

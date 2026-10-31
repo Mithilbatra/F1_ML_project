@@ -19,7 +19,7 @@ from __future__ import annotations
 import pandas as pd
 
 from .config import FEATURES_FILE
-from .data import load_master
+from .data import load_master, total_points
 
 # FastF1 renamed some drivers mid-season; without this, one driver becomes
 # two and his rolling history resets in the middle of the year.
@@ -69,7 +69,7 @@ def build_features(master: pd.DataFrame) -> pd.DataFrame:
 
     df["FullName"] = df["FullName"].replace(DRIVER_MAPPING)
     df["TeamName"] = df["TeamName"].replace(TEAM_MAPPING)
-    df["Points"] = df["Points"].fillna(0)
+    df["Points"] = total_points(df)
 
     # -- qualifying pace ----------------------------------------------------
     for col in ("Q1", "Q2", "Q3"):
