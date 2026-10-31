@@ -149,6 +149,8 @@ def train_and_evaluate(
         "test_rows": int(len(test_df)),
         "best_params": best_params,
         "metrics": metrics,
+        # saved with the metrics: permutation importance is too slow per page view
+        "importance": feature_importance(artifact, df)[:12],
     }
 
 

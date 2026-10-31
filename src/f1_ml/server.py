@@ -177,17 +177,10 @@ def create_app() -> Flask:
             return jsonify({"available": False,
                             "hint": "Run `f1ml train` in the console to train models."})
         report = json.loads(METRICS_FILE.read_text())
-        importance = []
-        try:
-            from .features import load_features
-            from .modeling import feature_importance, load_artifact
-
-            artifact = load_artifact(report["best_model"])
-            importance = feature_importance(artifact, load_features())
-        except Exception:
-            pass
+        # saved at training time; metrics files from before that have none
+        best = report["models"][report["best_model"]]
         return jsonify({"available": True, "report": report,
-                        "importance": importance[:12]})
+                        "importance": best.get("importance", [])})
 
     @app.get("/api/backtest/<int:year>")
     def backtest(year: int):

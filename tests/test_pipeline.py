@@ -13,6 +13,9 @@ def test_refresh_rebuilds_and_retrains_offline():
     assert 2024 in result["years"] and 2025 in result["years"]
     assert 0.0 <= result["top3_hit_rate"] <= 1.0
     assert result["best_model"] in {"rf", "gbdt"}
+    # the Model tab reads importance saved at training time, not recomputed per view
+    model = server.create_app().test_client().get("/api/model").get_json()
+    assert model["importance"][0]["feature"]
 
 
 def test_scheduler_off_by_default(monkeypatch):
