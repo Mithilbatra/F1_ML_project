@@ -8,8 +8,10 @@ parity with the real terminal.
 
 from __future__ import annotations
 
+import functools
 import json
 import logging
+import math
 import os
 import re
 import shlex
@@ -193,22 +195,30 @@ def create_app() -> Flask:
                             "hint": f"Run `f1ml backtest --year {year}` in the console."})
         return jsonify({"available": True, "report": json.loads(path.read_text())})
 
-    @app.get("/api/predict/<int:year>/<int:rnd>")
-    def predict(year: int, rnd: int):
-        from .modeling import best_model_name
+    # Answers below only change when a refresh retrains, so they're cached and
+    # cleared in _invalidate_caches(); without that, a loop of requests pins the CPU.
+
+    @functools.lru_cache(maxsize=128)
+    def _prediction(year: int, rnd: int, model: str) -> dict:
         from .predict import predict_round
 
-        try:
-            out = predict_round(year, rnd, best_model_name())
-        except ValueError as exc:
-            return jsonify({"error": str(exc)}), 400
+        out = predict_round(year, rnd, model)  # trains a 400-tree forest
         cols = ["FullName", "TeamName", "QualyPos", "GridPosition",
                 "prob", "PredictedPodium", "RacePos", "IsPodium"]
-        return jsonify({
+        return {
             "year": year, "round": rnd,
             "event": out["EventName"].iloc[0],
             "predictions": _records(out[cols]),
-        })
+        }
+
+    @app.get("/api/predict/<int:year>/<int:rnd>")
+    def predict(year: int, rnd: int):
+        from .modeling import best_model_name
+
+        try:
+            return jsonify(_prediction(year, rnd, best_model_name()))
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
 
     # -------------------------------------------------------- racing line
 
@@ -301,13 +311,21 @@ def create_app() -> Flask:
             return jsonify({"error": str(exc)}), 500
         return jsonify({"next_race": nxt, "forecast": forecast})
 
-    @app.get("/api/fantasy")
-    def fantasy():
+    @functools.lru_cache(maxsize=128)
+    def _fantasy(budget: float) -> dict:
         from . import fantasy as fan
 
+        return fan.optimise(budget)  # up to ~1.4M team combinations
+
+    @app.get("/api/fantasy")
+    def fantasy():
         budget = request.args.get("budget", default=100.0, type=float)
+        if not math.isfinite(budget):
+            return jsonify({"error": "Budget must be a number."}), 400
+        # snap to the UI's 80-120 range in 0.5 steps, so the cache stays small
+        budget = min(max(round(budget * 2) / 2, 80.0), 120.0)
         try:
-            return jsonify(fan.optimise(budget))
+            return jsonify(_fantasy(budget))
         except Exception as exc:
             return jsonify({"error": str(exc)}), 500
 
@@ -355,15 +373,24 @@ def create_app() -> Flask:
         _hub_cache.update(t=time.time(), data=payload)
         return jsonify(payload)
 
+    @functools.lru_cache(maxsize=32)
+    def _circuit_guide(event: str):
+        from . import weekend as wk
+
+        return wk.circuit_guide(event)  # session load + racing-line analysis
+
     @app.get("/api/circuit-guide")
     def circuit_guide():
-        from . import weekend as wk
+        from .data import load_master
 
         event = request.args.get("event")
         if not event:
             return jsonify({"error": "event required"}), 400
+        # FastF1 fuzzy-matches any text to some event, so stick to races we know
+        if event not in set(load_master()["EventName"]):
+            return jsonify({"available": False})
         try:
-            guide = wk.circuit_guide(event)
+            guide = _circuit_guide(event)
         except Exception as exc:
             return jsonify({"error": str(exc)}), 502
         if guide is None:
@@ -450,6 +477,9 @@ def create_app() -> Flask:
 
     def _invalidate_caches() -> None:
         _hub_cache.update(t=0.0, data=None)  # force a fresh forecast next call
+        _prediction.cache_clear()
+        _fantasy.cache_clear()
+        _circuit_guide.cache_clear()
 
     _maybe_start_auto_refresh(_invalidate_caches)
 
