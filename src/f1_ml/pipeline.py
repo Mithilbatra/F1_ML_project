@@ -5,8 +5,9 @@ retrains, and refreshes the backtests. It's shared by the `f1ml refresh` command
 and the in-server auto-refresh scheduler, and it's idempotent: if there's no new
 data — or no network — it simply rebuilds and retrains from what's on disk.
 
-Fetching a live, in-progress season is safe: `data.fetch_year` skips rounds that
-haven't happened yet, so mid-2026 this only pulls the races that have run.
+Fetching a live, in-progress season is safe: `data.fetch_year` skips sessions
+that haven't run yet and ones already saved, so a refresh only pulls the newest
+races (FastF1 allows 500 calls an hour).
 """
 
 from __future__ import annotations

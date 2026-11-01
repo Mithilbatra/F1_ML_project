@@ -42,8 +42,9 @@ _SESSIONS = {
 def fetch_year(year: int, kind: str = "both") -> list[str]:
     """Download session results for a season via FastF1 and save raw CSVs.
 
-    kind: "race", "qualifying", "sprint" or "both" (all three). Returns list of
-    files written.
+    kind: "race", "qualifying", "sprint" or "both" (all three). Sessions that
+    haven't run yet are skipped, and so are saved ones more than a week old.
+    Returns list of files written.
     """
     import fastf1  # lazy: heavy import + not needed for offline work
 
@@ -52,6 +53,7 @@ def fetch_year(year: int, kind: str = "both") -> list[str]:
 
     kinds = ["qualifying", "race", "sprint"] if kind == "both" else [kind]
     schedule = fastf1.get_event_schedule(year)
+    now = pd.Timestamp.now("UTC").tz_localize(None)  # naive UTC, like the schedule's dates
     written: list[str] = []
 
     for _, event in schedule.iterrows():
@@ -66,10 +68,17 @@ def fetch_year(year: int, kind: str = "both") -> list[str]:
             session_code, raw_dir = _SESSIONS[k]
             out_dir = raw_dir / str(year)
             out_dir.mkdir(parents=True, exist_ok=True)
+            name = f"{year}_Round_{str(round_number).zfill(2)}_{event_name.replace(' ', '_')}_{k.capitalize()}.csv"
+            path = out_dir / name
             try:
+                # FastF1 allows 500 calls/h, so leave sessions that haven't run yet,
+                # and saved ones once the stewards have had a week to change them
+                held = event.get_session_date(session_code, utc=True)
+                if held > now or (path.exists() and held < now - pd.Timedelta(days=7)):
+                    continue
                 session = fastf1.get_session(year, event_name, session_code)
                 session.load(telemetry=False, weather=False, messages=False)
-            except Exception as exc:  # race may not have happened yet
+            except Exception as exc:  # offline, rate-limited, or results not out yet
                 log.warning("Skipping %s %s (%s): %s", year, event_name, k, exc)
                 continue
             if session.results is None or len(session.results) == 0:
@@ -82,8 +91,6 @@ def fetch_year(year: int, kind: str = "both") -> list[str]:
             results.insert(0, "RoundNumber", round_number)
             results.insert(0, "Year", year)
 
-            name = f"{year}_Round_{str(round_number).zfill(2)}_{event_name.replace(' ', '_')}_{k.capitalize()}.csv"
-            path = out_dir / name
             results.to_csv(path, index=False)
             written.append(str(path))
             log.info("Saved %s", path)
