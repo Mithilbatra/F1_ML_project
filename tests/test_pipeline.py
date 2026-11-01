@@ -2,7 +2,9 @@
 
 import threading
 
-from f1_ml import pipeline, server
+import pandas as pd
+
+from f1_ml import backtest, data, features, modeling, pipeline, server
 
 
 def test_refresh_rebuilds_and_retrains_offline():
@@ -16,6 +18,20 @@ def test_refresh_rebuilds_and_retrains_offline():
     # the Model tab reads importance saved at training time, not recomputed per view
     model = server.create_app().test_client().get("/api/model").get_json()
     assert model["importance"][0]["feature"]
+
+
+def test_refresh_only_redoes_backtests_that_can_change(monkeypatch, tmp_path):
+    done = []
+    (tmp_path / "2024.json").write_text("{}")  # 2024 already backtested
+    monkeypatch.setattr(features, "build_and_save", lambda: pd.DataFrame({"x": [1]}))
+    monkeypatch.setattr(modeling, "train_all", lambda df: {
+        "best_model": "rf", "models": {"rf": {"metrics": {"top3_hit_rate": 0.5}}}})
+    monkeypatch.setattr(data, "available_years", lambda: [2024, 2025, 2026])
+    monkeypatch.setattr(backtest, "backtest_path", lambda y, m: tmp_path / f"{y}.json")
+    monkeypatch.setattr(backtest, "backtest_year", lambda y, m: done.append(y))
+
+    pipeline.refresh(2026, fetch=False, log=lambda *a: None)
+    assert done == [2025, 2026]  # missing one + the season being refreshed
 
 
 def test_scheduler_off_by_default(monkeypatch):

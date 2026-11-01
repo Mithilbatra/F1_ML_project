@@ -27,7 +27,7 @@ def refresh(year: int | None = None, *, fetch: bool = True,
     log:      a callable for progress lines (print, or a logger method).
     """
     from . import data as datamod
-    from .backtest import backtest_year
+    from .backtest import backtest_path, backtest_year
     from .features import build_and_save, feature_columns
     from .modeling import train_all
 
@@ -54,8 +54,10 @@ def refresh(year: int | None = None, *, fetch: bool = True,
 
     years = datamod.available_years()
     if backtest:
+        # earlier seasons can't change while this one runs: skip any already done
         for y in years:
-            backtest_year(y, report["best_model"])
+            if y == year or not backtest_path(y, report["best_model"]).exists():
+                backtest_year(y, report["best_model"])
         log("  Backtests refreshed.")
 
     return {
