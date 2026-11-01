@@ -34,6 +34,28 @@ def test_refresh_only_redoes_backtests_that_can_change(monkeypatch, tmp_path):
     assert done == [2025, 2026]  # missing one + the season being refreshed
 
 
+def test_refresh_fills_finished_seasons_too(monkeypatch):
+    # a fresh deploy starts from git's data, which can lack a season's last rounds;
+    # one season failing to fetch must not stop the others
+    pulled = []
+
+    def fetch_year(y):
+        pulled.append(y)
+        if y == 2024:
+            raise OSError("offline")
+        return []
+
+    monkeypatch.setattr(data, "available_years", lambda: [2024, 2025])
+    monkeypatch.setattr(data, "fetch_year", fetch_year)
+    monkeypatch.setattr(data, "merge_year", lambda y: None)
+    monkeypatch.setattr(features, "build_and_save", lambda: pd.DataFrame({"x": [1]}))
+    monkeypatch.setattr(modeling, "train_all", lambda df: {
+        "best_model": "rf", "models": {"rf": {"metrics": {"top3_hit_rate": 0.5}}}})
+
+    pipeline.refresh(2026, backtest=False, log=lambda *a: None)
+    assert pulled == [2024, 2025, 2026]
+
+
 def test_scheduler_off_by_default(monkeypatch):
     monkeypatch.delenv("PITWALL_AUTO_REFRESH", raising=False)
     monkeypatch.setattr(server, "_auto_refresh_started", False)

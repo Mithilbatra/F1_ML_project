@@ -69,7 +69,7 @@ sudo docker build -t "${NAME}:latest" "$DIR"
 # because this is public. Only the FastF1 download cache is a volume: data and
 # models come from the freshly built image (a volume there would hide every new
 # image's data and models behind old copies), and the container's auto-refresh
-# catches the current season up about a minute after it starts.
+# fetches any rounds the image lacks about a minute after it starts.
 echo "==> (Re)starting container…"
 sudo docker rm -f "${NAME}" >/dev/null 2>&1 || true
 sudo docker run -d --name "${NAME}" --restart unless-stopped \

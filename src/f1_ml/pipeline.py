@@ -1,7 +1,8 @@
 """The data → model refresh pipeline, in one place.
 
-`refresh()` pulls the latest results for a season, rebuilds the feature table,
-retrains, and refreshes the backtests. It's shared by the `f1ml refresh` command
+`refresh()` pulls the latest results for the current season and every season on
+disk, rebuilds the feature table, retrains, and refreshes the backtests. It's
+shared by the `f1ml refresh` command
 and the in-server auto-refresh scheduler, and it's idempotent: if there's no new
 data — or no network — it simply rebuilds and retrains from what's on disk.
 
@@ -22,7 +23,7 @@ def refresh(year: int | None = None, *, fetch: bool = True,
             backtest: bool = True, log=print) -> dict:
     """Run the full pipeline once and return a small report.
 
-    year:     season to pull (default: the current calendar year).
+    year:     season to pull besides those on disk (default: the current calendar year).
     fetch:    set False to rebuild + retrain without touching the network.
     backtest: set False to skip the walk-forward backtests.
     log:      a callable for progress lines (print, or a logger method).
@@ -36,14 +37,16 @@ def refresh(year: int | None = None, *, fetch: bool = True,
     fetched = 0
 
     if fetch:
-        try:
-            log(f"  Pulling {year} from FastF1…")
-            written = datamod.fetch_year(year)
-            fetched = len(written)
-            log(f"  {fetched} session files fetched.")
-            datamod.merge_year(year)
-        except Exception as exc:  # offline, rate-limited, or nothing raced yet
-            log(f"  Fetch skipped ({exc}); rebuilding from the data on disk.")
+        # finished seasons too: a fresh deploy starts from the data in git, which
+        # can lack a season's last rounds (saved sessions cost no FastF1 calls)
+        for y in sorted({*datamod.available_years(), year}):
+            try:
+                log(f"  Pulling {y} from FastF1…")
+                fetched += len(datamod.fetch_year(y))
+                datamod.merge_year(y)
+            except Exception as exc:  # offline, rate-limited, or nothing raced yet
+                log(f"  {y} fetch skipped ({exc}); using the data on disk.")
+        log(f"  {fetched} session files fetched.")
 
     df = build_and_save()
     log(f"  Features rebuilt: {len(df)} rows, {len(feature_columns(df))} columns.")
