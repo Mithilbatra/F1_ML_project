@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from .config import FEATURES_FILE
+from .config import FEATURES_FILE, atomic_write
 from .data import load_master, total_points
 
 # FastF1 renamed some drivers mid-season; without this, one driver becomes
@@ -149,7 +149,7 @@ def build_and_save(years: list[int] | None = None) -> pd.DataFrame:
     """Build the feature frame from master files and persist it."""
     df = build_features(load_master(years))
     FEATURES_FILE.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(FEATURES_FILE, index=False)
+    atomic_write(FEATURES_FILE, lambda p: df.to_csv(p, index=False))
     return df
 
 

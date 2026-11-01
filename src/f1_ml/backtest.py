@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
-from .config import MODELS_DIR
+from .config import MODELS_DIR, atomic_write
 from .features import load_features
 from .predict import predict_round
 
@@ -62,5 +62,6 @@ def backtest_year(
         "races": races,
     }
     MODELS_DIR.mkdir(exist_ok=True)
-    backtest_path(year, model_name).write_text(json.dumps(report, indent=2))
+    atomic_write(backtest_path(year, model_name),
+                 lambda p: p.write_text(json.dumps(report, indent=2)))
     return report

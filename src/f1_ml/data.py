@@ -13,6 +13,7 @@ from .config import (
     RAW_QUALY_DIR,
     RAW_RACE_DIR,
     RAW_SPRINT_DIR,
+    atomic_write,
     master_file,
 )
 
@@ -146,7 +147,7 @@ def merge_year(year: int) -> pd.DataFrame:
 
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
     out_path = master_file(year)
-    master.to_csv(out_path, index=False)
+    atomic_write(out_path, lambda p: master.to_csv(p, index=False))
     log.info("Master file for %s saved to %s (%d rows)", year, out_path, len(master))
     return master
 

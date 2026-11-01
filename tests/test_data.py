@@ -1,8 +1,27 @@
 """Championship standings."""
 
 import pandas as pd
+import pytest
 
+from f1_ml.config import atomic_write
 from f1_ml.data import compute_standings, driver_key
+
+
+def test_atomic_write_never_leaves_a_half_written_file(tmp_path):
+    target = tmp_path / "metrics.json"
+    target.write_text("old")
+
+    def crash_midway(p):
+        p.write_text("half")
+        raise OSError("disk full")
+
+    with pytest.raises(OSError):
+        atomic_write(target, crash_midway)
+    assert target.read_text() == "old"
+    assert list(tmp_path.iterdir()) == [target]  # no stray temp file
+
+    atomic_write(target, lambda p: p.write_text("new"))
+    assert target.read_text() == "new"
 
 
 def test_driver_key_survives_fastf1_spelling_changes():

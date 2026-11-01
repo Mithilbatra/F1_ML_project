@@ -28,3 +28,14 @@ RANDOM_STATE = 42
 
 def master_file(year: int) -> Path:
     return PROCESSED_DIR / f"{year}_master_results.csv"
+
+
+def atomic_write(path: Path, write) -> None:
+    """Write via a temp file + rename, so a reader never sees a half-written file
+    (the web server reads these while the background refresh rewrites them)."""
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    try:
+        write(tmp)
+        os.replace(tmp, path)
+    finally:
+        tmp.unlink(missing_ok=True)

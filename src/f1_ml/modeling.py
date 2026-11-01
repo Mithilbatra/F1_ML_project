@@ -17,7 +17,7 @@ import joblib
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
 
-from .config import METRICS_FILE, MODELS_DIR, RANDOM_STATE
+from .config import METRICS_FILE, MODELS_DIR, RANDOM_STATE, atomic_write
 from .evaluate import CONTEXT_COLS, evaluate_predictions
 from .features import feature_columns
 
@@ -139,7 +139,7 @@ def train_and_evaluate(
     }
     MODELS_DIR.mkdir(exist_ok=True)
     path = MODELS_DIR / f"podium_{model_name}.pkl"
-    joblib.dump(artifact, path)
+    atomic_write(path, lambda p: joblib.dump(artifact, p))
 
     return {
         "artifact_path": str(path),
@@ -172,7 +172,7 @@ def train_all(
         "models": results,
     }
     METRICS_FILE.parent.mkdir(exist_ok=True)
-    METRICS_FILE.write_text(json.dumps(report, indent=2))
+    atomic_write(METRICS_FILE, lambda p: p.write_text(json.dumps(report, indent=2)))
     return report
 
 
