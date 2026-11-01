@@ -296,21 +296,6 @@ def create_app() -> Flask:
 
     # -------------------------------------------------- weekend / fantasy
 
-    @app.get("/api/weekend")
-    def weekend():
-        from . import weekend as wk
-
-        try:
-            nxt = wk.next_race()
-        except Exception as exc:
-            nxt = None
-            log.warning("next_race failed: %s", exc)
-        try:
-            forecast = wk.form_forecast()
-        except Exception as exc:
-            return jsonify({"error": str(exc)}), 500
-        return jsonify({"next_race": nxt, "forecast": forecast})
-
     @functools.lru_cache(maxsize=128)
     def _fantasy(budget: float) -> dict:
         from . import fantasy as fan
@@ -409,24 +394,6 @@ def create_app() -> Flask:
             return jsonify(driver_profile(year, name))
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 404
-
-    @app.get("/api/quali/<int:year>/<int:rnd>")
-    def quali(year: int, rnd: int):
-        from .analysis import qualifying_analysis
-
-        try:
-            return jsonify(qualifying_analysis(year, rnd))
-        except Exception as exc:
-            return jsonify({"error": str(exc)}), 502
-
-    @app.get("/api/practice/<int:year>/<int:rnd>")
-    def practice(year: int, rnd: int):
-        from .analysis import practice_pace
-
-        try:
-            return jsonify(practice_pace(year, rnd))
-        except Exception as exc:
-            return jsonify({"error": str(exc)}), 502
 
     # ---------------------------------------------------------- console api
 

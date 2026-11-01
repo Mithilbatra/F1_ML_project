@@ -1,6 +1,5 @@
 """Deeper analysis for the level-up features: circuit history, teammate
-battles, driver profiles (from the local master data — fast, no network), plus
-practice long-run pace and qualifying analysis (from FastF1 sessions).
+battles and driver profiles (from the local master data — fast, no network).
 """
 
 from __future__ import annotations
@@ -150,83 +149,3 @@ def driver_profile(year: int, driver: str) -> dict:
         "avg_finish": round(float(np.mean(finishes)), 1) if finishes else None,
         "teammate": tm,
     }
-
-
-# --------------------------------------------------------- session-based
-
-def practice_pace(year: int, rnd: int) -> dict:
-    """Representative long-run pace from the practice sessions.
-
-    For each driver we take the median of their longer green-flag laps across
-    all practice sessions (a rough race-pace proxy the teams themselves study).
-    """
-    from .telemetry import load_session, session_drivers
-
-    frames = []
-    used = []
-    for sc in ("FP1", "FP2", "FP3"):
-        try:
-            s = load_session(year, str(rnd), sc, telemetry=False)
-        except Exception:
-            continue
-        laps = s.laps.pick_wo_box()
-        laps = laps[laps["LapTime"].notna() & laps["IsAccurate"]]
-        if not laps.empty:
-            frames.append(laps[["Driver", "LapTime"]])
-            used.append(sc)
-    if not frames:
-        return {"error": "No usable practice data for this event yet."}
-
-    laps = pd.concat(frames)
-    laps["sec"] = laps["LapTime"].dt.total_seconds()
-    colors = {}
-    try:
-        colors = {d["abbr"]: d["color"] for d in session_drivers(
-            load_session(year, str(rnd), used[-1], telemetry=False))}
-    except Exception:
-        pass
-
-    rows = []
-    for drv, d in laps.groupby("Driver"):
-        clean = d["sec"][d["sec"] <= d["sec"].median() * 1.04]  # long-run-ish
-        if len(clean) < 3:
-            continue
-        rows.append({"abbr": drv, "color": colors.get(drv, "#888"),
-                     "pace": round(float(clean.median()), 3), "laps": int(len(clean))})
-    rows.sort(key=lambda r: r["pace"])
-    if rows:
-        lead = rows[0]["pace"]
-        for r in rows:
-            r["gap"] = round(r["pace"] - lead, 3)
-    return {"year": year, "sessions": used, "drivers": rows}
-
-
-def qualifying_analysis(year: int, rnd: int) -> dict:
-    """Gap to pole and Q1/Q2/Q3 for a qualifying session."""
-    from .telemetry import load_session, session_drivers
-
-    s = load_session(year, str(rnd), "Q", telemetry=False)
-    res = s.results
-    colors = {d["abbr"]: d["color"] for d in session_drivers(s)}
-
-    def secs(v):
-        return None if pd.isna(v) else round(pd.Timedelta(v).total_seconds(), 3)
-
-    rows = []
-    for _, r in res.iterrows():
-        if pd.isna(r["Abbreviation"]):
-            continue
-        q = [secs(r["Q1"]), secs(r["Q2"]), secs(r["Q3"])]
-        best = min([t for t in q if t is not None], default=None)
-        rows.append({
-            "abbr": r["Abbreviation"], "color": colors.get(r["Abbreviation"], "#888"),
-            "pos": None if pd.isna(r["Position"]) else int(r["Position"]),
-            "q1": q[0], "q2": q[1], "q3": q[2], "best": best,
-        })
-    rows = [r for r in rows if r["best"] is not None]
-    rows.sort(key=lambda r: r["pos"] if r["pos"] else 99)
-    if rows:
-        pole = rows[0]["best"]
-        for r in rows:
-            r["gap"] = round(r["best"] - pole, 3)
-    return {"year": year, "event": s.event["EventName"], "drivers": rows}
