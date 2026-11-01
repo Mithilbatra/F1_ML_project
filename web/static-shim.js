@@ -22,7 +22,13 @@
   function staticUrl(url) {
     var i = url.indexOf("/api/");
     if (i < 0) return null;
-    var path = url.slice(i + 5).split("?")[0].replace(/\/$/, "");
+    var parts = url.slice(i + 5).split("?");
+    var path = parts[0].replace(/\/$/, "");
+    // driver profiles are saved per year and name (see snapshot.py)
+    if (path === "driver" && parts[1]) {
+      var q = new URLSearchParams(parts[1]);
+      path += "/" + q.get("year") + "/" + encodeURIComponent(q.get("name"));
+    }
     return "data/api/" + path + ".json";
   }
 
