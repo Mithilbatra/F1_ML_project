@@ -88,9 +88,10 @@ refreshes itself every 24 h: it pulls the season's latest results and retrains,
 with no restart needed (predictions read the model files fresh each request).
 As the 2026 races run, the live app fetches each new one and the model learns
 from it automatically. Set the env var to another number of hours to change the
-cadence, or to empty to turn it off. In the Oracle deploy the FastF1 cache,
-accumulated data, and retrained models are kept on Docker volumes, so a redeploy
-never loses what the season has taught the model.
+cadence, or to empty to turn it off. Each deploy starts from the data and
+models in the image and the first refresh (about a minute in) catches the
+season up; in the Oracle deploy the FastF1 download cache is kept on a Docker
+volume so that catch-up is quick.
 
 ## The `f1ml` commands
 

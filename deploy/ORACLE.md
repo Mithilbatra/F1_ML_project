@@ -75,10 +75,11 @@ Pit Wall is live:  http://<PUBLIC_IP>/
 
 You don't have to do anything to track the 2026 season. The container runs with
 `PITWALL_AUTO_REFRESH=24`, so once a day it pulls the latest results and retrains
-— as each race runs, the live site fetches it and the model learns from it. The
-FastF1 cache, accumulated season data, and retrained models live on Docker
-volumes (`pitwall_cache`, `pitwall_data`, `pitwall_models`), so redeploys keep
-everything the model has learned.
+— as each race runs, the live site fetches it and the model learns from it.
+Each deploy starts from the data and models built into the image; the first
+refresh, about a minute after start, catches the current season up. The FastF1
+download cache lives on a Docker volume (`pitwall_cache`), so that catch-up
+rarely needs to re-download anything.
 
 To force a refresh immediately instead of waiting for the daily one:
 
@@ -89,7 +90,7 @@ sudo docker exec pitwall /app/.venv/bin/python -m f1_ml.cli refresh
 ### Updating the code later
 
 SSH back in and re-run the deploy one-liner — it pulls the latest code, rebuilds,
-and restarts, reusing the volumes so no season data is lost.
+and restarts; the auto-refresh then brings the current season up to date.
 
 ## 6. (Optional) A real domain + HTTPS
 
