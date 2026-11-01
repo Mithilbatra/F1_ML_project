@@ -48,7 +48,7 @@ jobs:
       # rate limit), refresh falls back to the committed data — the deploy still
       # succeeds, just without brand-new races.
       - name: Refresh data + models
-        run: uv run f1ml refresh || uv run f1ml refresh --no-fetch
+        run: uv run f1ml refresh
 
       - name: Build static site
         run: uv run f1ml snapshot --out site
