@@ -35,7 +35,9 @@ def _enable_cache() -> None:
     fastf1.Cache.enable_cache(str(FASTF1_CACHE_DIR))
 
 
-@functools.lru_cache(maxsize=16)
+# a session with telemetry is tens of MB+, so keep only a couple in memory;
+# FastF1's disk cache makes a miss a reload, not a download
+@functools.lru_cache(maxsize=2)
 def load_session(year: int, gp: str, session: str, telemetry: bool = True):
     """Load and cache a session. `gp` is an event name or round number string."""
     import fastf1
