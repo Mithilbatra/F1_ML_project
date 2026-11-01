@@ -236,8 +236,6 @@ tests/                pytest suite
 e2e/                  Playwright frontend smoke tests
 data/                 raw/ and processed/ CSVs
 models/               trained artifacts + metrics.json (git-ignored)
-src/etl, src/features, src/train, src/models
-                      legacy scripts, now thin wrappers over `f1ml`
 notebooks/            original exploration notebooks (uv sync --group notebooks)
 ```
 
