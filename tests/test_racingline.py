@@ -171,16 +171,20 @@ def test_decompression_bomb_refused_without_allocating(tmp_path):
     Image = pytest.importorskip("PIL.Image")
     bomb = tmp_path / "bomb.png"
     Image.new("1", (20000, 20000)).save(bomb)  # tiny file, ~1.2 GB once decoded
+    # measure what the decode adds on top of the imports: the imports alone
+    # differ a lot between platforms (~650 MB peak on Linux CI)
     code = ("import resource, sys\n"
             "from f1_ml import racingline as rl\n"
+            "peak = lambda: resource.getrusage(resource.RUSAGE_SELF).ru_maxrss\n"
+            "before = peak()\n"
             "try:\n"
             "    rl.decode_image(open(sys.argv[1], 'rb').read())\n"
             "except ValueError:\n"
-            "    print(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)\n")
+            "    print(peak() - before)\n")
     out = subprocess.run([sys.executable, "-c", code, str(bomb)],
                          capture_output=True, text=True, check=True)
-    peak_mb = int(out.stdout) / (1024 * 1024 if sys.platform == "darwin" else 1024)
-    assert 0 < peak_mb < 600  # decoding it would need 1200+ MB
+    added_mb = int(out.stdout) / (1024 * 1024 if sys.platform == "darwin" else 1024)
+    assert added_mb < 300  # decoding it would add 1200+ MB
 
 
 def test_upload_over_limit_gets_json_413():
