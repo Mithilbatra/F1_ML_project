@@ -129,6 +129,35 @@ def test_speed_dependent_grip_slows_tight_corners():
     assert v_fast >= car["v_max"] - 1  # a 300 m sweeper: near top speed
 
 
+# ------------------------------------------------------------ circuit guide
+
+def test_circuit_guide_takes_newest_season_with_this_exact_race(monkeypatch):
+    import pandas as pd
+    from types import SimpleNamespace
+
+    from f1_ml import data, telemetry, weekend
+
+    tried = []
+
+    def fake_load_session(year, gp, sc, telemetry=True):
+        tried.append(year)
+        if year == 2026:
+            raise ValueError("not raced here yet")
+        name = "Belgian Grand Prix" if year == 2025 else gp  # 2025: a fuzzy mismatch
+        return SimpleNamespace(event={"EventName": name},
+                               results=pd.DataFrame({"Abbreviation": ["VER"]}))
+
+    lap = pd.DataFrame({"Distance": [0.0, 4300.0], "X": [0, 1], "Y": [0, 1]})
+    monkeypatch.setattr(data, "available_years", lambda: [2024, 2025, 2026])
+    monkeypatch.setattr(telemetry, "load_session", fake_load_session)
+    monkeypatch.setattr(telemetry, "fastest_lap_frame", lambda s, d: (None, lap))
+    monkeypatch.setattr(rl, "analyze_from_xy", lambda x, y, track_length_km: {})
+
+    guide = weekend.circuit_guide("Dutch Grand Prix")
+    assert tried == [2026, 2025, 2024]
+    assert guide["source_year"] == 2024
+
+
 # ------------------------------------------------------------ upload limits
 
 def test_decode_rejects_oversized_map():

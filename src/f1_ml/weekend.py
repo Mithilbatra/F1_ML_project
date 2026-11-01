@@ -147,18 +147,19 @@ def race_forecast(event_name: str | None = None, top: int = 10) -> dict:
     }
 
 
-def circuit_guide(event_name: str, prefer_year: int | None = None) -> dict | None:
+def circuit_guide(event_name: str) -> dict | None:
     """Racing line + lap time for a circuit, traced from a recent pole lap."""
+    from .data import available_years
     from .telemetry import fastest_lap_frame, load_session
 
     from . import racingline as rl
 
-    # try the most recent completed season we have telemetry for
-    for year in ([prefer_year] if prefer_year else []) + [2025, 2024]:
-        if year is None:
-            continue
+    # newest season first; one that hasn't raced here yet just falls through
+    for year in sorted(available_years(), reverse=True):
         try:
             session = load_session(year, event_name, "Q")
+            if session.event["EventName"] != event_name:
+                continue  # FastF1 fuzzy-matched a different race: wrong circuit
             pole_abbr = session.results.iloc[0]["Abbreviation"]
             lap, tel = fastest_lap_frame(session, pole_abbr)
             # the pole lap's own distance is the track length
