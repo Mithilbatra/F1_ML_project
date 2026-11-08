@@ -1,11 +1,10 @@
 .git
 .venv
-.DS_Store
+**/.DS_Store
 fastf1_cache_dir
 notebooks
 models
 samples
-data/raw
 data/processed/features.csv
 tests
 .cl*

@@ -15,7 +15,9 @@ RUN uv sync --frozen --extra vision --no-install-project
 # project
 COPY src ./src
 COPY web ./web
-COPY data/processed ./data/processed
+# raw CSVs too: the refresh skips sessions saved there and rebuilds each
+# season's master from them, so without them it would shrink the masters
+COPY data ./data
 COPY README.md ./
 RUN uv sync --frozen --extra vision
 
